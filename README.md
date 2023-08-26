@@ -2,12 +2,11 @@
 
 ![Alt text](resources/image.png)
 
-
-
+A... vits2_pytorch and MB-iSTFT-VITS hybrid... Gods, an abomination! Who created this atrocity?
 
 ## pre-requisites
 1. Python >= 3.8
-2. Pytorch version 1.13.1
+2. Pytorch version 1.13.1 (+cu1xx)
 3. CUDA
 4. Clone this repository
 5. Install python requirements. Please refer [requirements.txt](requirements.txt)
