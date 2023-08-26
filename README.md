@@ -33,7 +33,7 @@ python setup.py build_ext --inplace
 
 ## Training Example
 ```sh
-python train.py -c configs/mini_mb_istft_vits2_base.json -m /content/drive/MyDrive/savedmodel/test
+python train.py -c configs/mini_mb_istft_vits2_base.json -m models/test
 ```
 
 ## Credits
