@@ -242,7 +242,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
 
     with autocast(enabled=hps.train.fp16_run):
-      y_hat, y_hat_mb, l_length, attn, ids_slice, x_mask, z_mask, (z, z_p, m_p, logs_p, m_q, logs_q), (hidden_x, logw, logw_) = net_g(x, x_lengths, spec, spec_lengths) # e 다 합해서 9개인데 8개만 반환
+      y_hat, y_hat_mb, l_length, attn, ids_slice, x_mask, z_mask, (z, z_p, m_p, logs_p, m_q, logs_q), (hidden_x, logw, logw_) = net_g(x, x_lengths, spec, spec_lengths)
 
       if hps.model.use_mel_posterior_encoder or hps.data.use_mel_posterior_encoder:
         mel = spec
