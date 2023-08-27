@@ -4,6 +4,8 @@
 
 A... vits2_pytorch and MB-iSTFT-VITS hybrid... Gods, an abomination! Who created this atrocity?
 
+This is an Experimental build. Does not guarantee performance therefore.
+
 ## pre-requisites
 1. Python >= 3.8
 2. Pytorch version 1.13.1 (+cu1xx)
