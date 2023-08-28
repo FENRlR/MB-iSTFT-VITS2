@@ -1,6 +1,6 @@
 # MB-iSTFT-VITS2
 
-![Alt text](resources/image3.png)
+![Alt text](resources/image4.png)
 
 A... vits2_pytorch and MB-iSTFT-VITS hybrid... Gods, an abomination! Who created this atrocity?
 
