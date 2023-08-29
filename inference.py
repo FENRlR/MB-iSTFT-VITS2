@@ -20,6 +20,10 @@ from text import text_to_sequence
 from text2 import text_to_sequence as text_to_sequence2
 import langdetect
 
+import pyaudio
+import numpy as np
+from numpy.fft import fft, ifft
+
 from scipy.io.wavfile import write
 import re
 from scipy import signal
@@ -62,15 +66,33 @@ def vcss(inputstr):
     stn_tst = get_text(fltstr, hps)
 
     speed = 1
+    output_dir = 'output'
     sid = 0
+    with torch.no_grad():
+        x_tst = stn_tst.cuda().unsqueeze(0)
+        x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).cuda()
+        audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1 / speed)[0][
+                0, 0].data.cpu().float().numpy()
+    write(f'./{output_dir}/output_{sid}.wav', hps.data.sampling_rate, audio)
+    print(f'./{output_dir}/output_{sid}.wav Generated!')
+
+
+def vcms(inputstr, sid):
+    fltstr = re.sub(r"[\[\]\(\)\{\}]", "", inputstr)
+    fltstr = langdetector(fltstr)
+    stn_tst = get_text(fltstr, hps)
+
+    speed = 1
     output_dir = 'output'
     with torch.no_grad():
         x_tst = stn_tst.cuda().unsqueeze(0)
         x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).cuda()
+        sid = torch.LongTensor([sid]).cuda()
         audio = net_g.infer(x_tst, x_tst_lengths, sid=sid, noise_scale=.667, noise_scale_w=0.8, length_scale=1 / speed)[0][
-                0, 0].data.cpu().float().numpy()
+            0, 0].data.cpu().float().numpy()
     write(f'./{output_dir}/output_{sid}.wav', hps.data.sampling_rate, audio)
     print(f'./{output_dir}/output_{sid}.wav Generated!')
+
 
 
 
@@ -89,12 +111,13 @@ net_g = SynthesizerTrn(
     len(symbols),
     posterior_channels,
     hps.train.segment_size // hps.data.hop_length,
+    # n_speakers=hps.data.n_speakers, #- for multi speaker
     **hps.model).cuda()
 _ = net_g.eval()
 
 _ = utils.load_checkpoint("./models/G_2000.pth", net_g, None)
 
 # - text input
-input = "apple"
+input = "I try to get the waiter's attention by blinking in morse code"
 
 vcss(input)

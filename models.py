@@ -16,6 +16,7 @@ from commons import init_weights, get_padding
 from pqmf import PQMF
 from stft import TorchSTFT
 
+AVAILABLE_FLOW_TYPES = ["pre_conv", "fft", "mono_layer_inter_residual", "mono_layer_post_residual"]
 
 class StochasticDurationPredictor(nn.Module):
   def __init__(self, in_channels, filter_channels, kernel_size, p_dropout, n_flows=4, gin_channels=0):
@@ -394,6 +395,8 @@ class MonoTransformerFlowLayer(nn.Module): #vits2
       channels,
       hidden_channels,
       mean_only=False,
+      residual_connection=False,
+      # according to VITS-2 paper fig 1B set residual_connection=True
   ):
     assert channels % 2 == 0, "channels should be divisible by 2"
     super().__init__()
@@ -401,6 +404,7 @@ class MonoTransformerFlowLayer(nn.Module): #vits2
     self.hidden_channels = hidden_channels
     self.half_channels = channels // 2
     self.mean_only = mean_only
+    self.residual_connection = residual_connection
     #vits2
     self.pre_transformer = attentions.Encoder(
         self.half_channels,
@@ -417,25 +421,59 @@ class MonoTransformerFlowLayer(nn.Module): #vits2
     self.post.bias.data.zero_()
 
   def forward(self, x, x_mask, g=None, reverse=False):
-    x0, x1 = torch.split(x, [self.half_channels] * 2, 1)
-    x0_ = self.pre_transformer(x0 * x_mask, x_mask) #vits2
-    h = x0_ + x0 #vits2
-    stats = self.post(h) * x_mask
-    if not self.mean_only:
-        m, logs = torch.split(stats, [self.half_channels] * 2, 1)
-    else:
-        m = stats
-        logs = torch.zeros_like(m)
-    if not reverse:
-        x1 = m + x1 * torch.exp(logs) * x_mask
-        x = torch.cat([x0, x1], 1)
-        logdet = torch.sum(logs, [1, 2])
-        return x, logdet
-    else:
-        x1 = (x1 - m) * torch.exp(-logs) * x_mask
-        x = torch.cat([x0, x1], 1)
-        return x
-        
+      if self.residual_connection:
+          if not reverse:
+              x0, x1 = torch.split(x, [self.half_channels] * 2, 1)
+              x0_ = x0 * x_mask
+              x0_ = self.pre_transformer(x0, x_mask)  # vits2
+              stats = self.post(x0_) * x_mask
+              if not self.mean_only:
+                  m, logs = torch.split(stats, [self.half_channels] * 2, 1)
+              else:
+                  m = stats
+                  logs = torch.zeros_like(m)
+              x1 = m + x1 * torch.exp(logs) * x_mask
+              x_ = torch.cat([x0, x1], 1)
+              x = x + x_
+              logdet = torch.sum(torch.log(torch.exp(logs) + 1), [1, 2])
+              logdet = logdet + torch.log(torch.tensor(2)) * (x0.shape[1] * x0.shape[2])
+              return x, logdet
+
+          else:
+              x0, x1 = torch.split(x, [self.half_channels] * 2, 1)
+              x0 = x0 / 2
+              x0_ = x0 * x_mask
+              x0_ = self.pre_transformer(x0, x_mask)  # vits2
+              stats = self.post(x0_) * x_mask
+              if not self.mean_only:
+                  m, logs = torch.split(stats, [self.half_channels] * 2, 1)
+              else:
+                  m = stats
+                  logs = torch.zeros_like(m)
+              x1_ = ((x1 - m) / (1 + torch.exp(-logs))) * x_mask
+              x = torch.cat([x0, x1_], 1)
+              return x
+      else:
+          x0, x1 = torch.split(x, [self.half_channels] * 2, 1)
+          x0_ = self.pre_transformer(x0 * x_mask, x_mask)  # vits2
+          h = x0_ + x0  # vits2
+          stats = self.post(h) * x_mask
+          if not self.mean_only:
+              m, logs = torch.split(stats, [self.half_channels] * 2, 1)
+          else:
+              m = stats
+              logs = torch.zeros_like(m)
+          if not reverse:
+              x1 = m + x1 * torch.exp(logs) * x_mask
+              x_ = torch.cat([x0, x1], 1)
+              logdet = torch.sum(logs, [1, 2])
+              return x, logdet
+          else:
+              x1 = (x1 - m) * torch.exp(-logs) * x_mask
+              x = torch.cat([x0, x1], 1)
+              return x
+
+
 class ResidualCouplingTransformersBlock(nn.Module): #vits2
   def __init__(self,
       channels,
@@ -487,7 +525,7 @@ class ResidualCouplingTransformersBlock(nn.Module): #vits2
              )
              )
           self.flows.append(modules.Flip())
-      elif transformer_flow_type == "mono_layer":
+      elif transformer_flow_type == "mono_layer_inter_residual":
         for i in range(n_flows):
           self.flows.append(
              modules.ResidualCouplingLayer(
@@ -506,6 +544,26 @@ class ResidualCouplingTransformersBlock(nn.Module): #vits2
                   channels, hidden_channels, mean_only=True
               )
           )
+    elif transformer_flow_type == "mono_layer_post_residual":
+        for i in range(n_flows):
+            self.flows.append(
+                modules.ResidualCouplingLayer(
+                    channels,
+                    hidden_channels,
+                    kernel_size,
+                    dilation_rate,
+                    n_layers,
+                    gin_channels=gin_channels,
+                    mean_only=True,
+                )
+            )
+            self.flows.append(modules.Flip())
+            self.flows.append(
+                MonoTransformerFlowLayer(
+                    channels, hidden_channels, mean_only=True,
+                    residual_connection=True
+                )
+            )
     else:
       for i in range(n_flows):
         self.flows.append(
@@ -1044,9 +1102,9 @@ class SynthesizerTrn(nn.Module):
     self.istft_vits = istft_vits
     self.use_spk_conditioned_encoder = kwargs.get("use_spk_conditioned_encoder", False)
     self.use_transformer_flows = kwargs.get("use_transformer_flows", False)
-    self.transformer_flow_type = kwargs.get("transformer_flow_type", "mono_layer")
+    self.transformer_flow_type = kwargs.get("transformer_flow_type", "mono_layer_post_residual")
     if self.use_transformer_flows:
-      assert self.transformer_flow_type in ["pre_conv", "fft", "mono_layer"], "transformer_flow_type must be one of ['pre_conv', 'fft','mono_layer']"
+      assert self.transformer_flow_type in AVAILABLE_FLOW_TYPES, f"transformer_flow_type must be one of {AVAILABLE_FLOW_TYPES}"
     self.use_sdp = use_sdp
     # self.use_duration_discriminator = kwargs.get("use_duration_discriminator", False)
     self.use_noise_scaled_mas = kwargs.get("use_noise_scaled_mas", False)
@@ -1181,6 +1239,7 @@ class SynthesizerTrn(nn.Module):
     o, o_mb = self.dec((z * y_mask)[:,:,:max_len], g=g)
     return o, o_mb, attn, y_mask, (z, z_p, m_p, logs_p)
 
+''' ## (obsolete) currently vits-2 is not capable of voice conversion
   def voice_conversion(self, y, y_lengths, sid_src, sid_tgt): # 아예 사용되지 않음
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
     g_src = self.emb_g(sid_src).unsqueeze(-1)
@@ -1190,3 +1249,4 @@ class SynthesizerTrn(nn.Module):
     z_hat = self.flow(z_p, y_mask, g=g_tgt, reverse=True)
     o_hat, o_hat_mb = self.dec(z_hat * y_mask, g=g_tgt)
     return o_hat, o_hat_mb, y_mask, (z, z_p, z_hat)
+'''
