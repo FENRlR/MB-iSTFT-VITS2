@@ -20,10 +20,6 @@ from text import text_to_sequence
 from text2 import text_to_sequence as text_to_sequence2
 import langdetect
 
-import pyaudio
-import numpy as np
-from numpy.fft import fft, ifft
-
 from scipy.io.wavfile import write
 import re
 from scipy import signal
@@ -60,9 +56,9 @@ def langdetector(text):  # from PolyLangVITS
         return text
 
 
-def vcss(inputstr):
+def vcss(inputstr): # single
     fltstr = re.sub(r"[\[\]\(\)\{\}]", "", inputstr)
-    fltstr = langdetector(fltstr)
+    fltstr = langdetector(fltstr) # can be optional depending on cleaner you use
     stn_tst = get_text(fltstr, hps)
 
     speed = 1
