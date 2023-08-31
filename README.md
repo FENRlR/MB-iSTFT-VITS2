@@ -12,7 +12,7 @@ This is an Experimental build. Does not guarantee performance, therefore.
 3. CUDA
 4. Clone this repository
 5. Install python requirements. Please refer [requirements.txt](requirements.txt)
-    1. You may need to install espeak first: `apt-get install espeak`
+    ~~1. You may need to install espeak first: `apt-get install espeak`~~
 6. Prepare datasets
     1. ex) Download and extract the LJ Speech dataset, then rename or create a link to the dataset folder: `ln -s /path/to/LJSpeech-1.1/wavs DUMMY1`
 7. Build Monotonic Alignment Search and run preprocessing if you use your own datasets.
