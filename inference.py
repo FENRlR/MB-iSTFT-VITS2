@@ -17,7 +17,6 @@ from data_utils import TextAudioLoader, TextAudioCollate, TextAudioSpeakerLoader
 from models import SynthesizerTrn
 from text.symbols import symbols
 from text import text_to_sequence
-from text2 import text_to_sequence as text_to_sequence2
 import langdetect
 
 from scipy.io.wavfile import write
