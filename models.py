@@ -912,7 +912,8 @@ class Multistream_iSTFT_Generator(torch.nn.Module):
         for k in range(self.subbands):
             updown_filter[k, k, 0] = 1.0
         self.register_buffer("updown_filter", updown_filter)
-        self.multistream_conv_post = weight_norm(Conv1d(4, 1, kernel_size=63, bias=False, padding=get_padding(63, 1)))
+        #self.multistream_conv_post = weight_norm(Conv1d(4, 1, kernel_size=63, bias=False, padding=get_padding(63, 1)))
+        self.multistream_conv_post = weight_norm(Conv1d(self.subbands, 1, kernel_size=63, bias=False, padding=get_padding(63, 1))) # from MB-iSTFT-VITS-44100-Ja
         self.multistream_conv_post.apply(init_weights)
 
     def forward(self, x, g=None):
@@ -949,7 +950,8 @@ class Multistream_iSTFT_Generator(torch.nn.Module):
         y_mb_hat = torch.reshape(y_mb_hat, (x.shape[0], self.subbands, 1, y_mb_hat.shape[-1]))
         y_mb_hat = y_mb_hat.squeeze(-2)
 
-        y_mb_hat = F.conv_transpose1d(y_mb_hat, self.updown_filter.cuda(x.device) * self.subbands, stride=self.subbands)
+        #y_mb_hat = F.conv_transpose1d(y_mb_hat, self.updown_filter.cuda(x.device) * self.subbands, stride=self.subbands)
+        y_mb_hat = F.conv_transpose1d(y_mb_hat, self.updown_filter.to(x.device) * self.subbands, stride=self.subbands)
 
         y_g_hat = self.multistream_conv_post(y_mb_hat)
 

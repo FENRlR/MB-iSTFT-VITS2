@@ -8,7 +8,7 @@ This is an Experimental build. Does not guarantee performance, therefore.
 
 ## pre-requisites
 1. Python >= 3.8
-2. Pytorch version 1.13.1 (+cu1xx)
+2. [Pytorch](https://pytorch.org/get-started/previous-versions/#v1131) version 1.13.1 (+cu1xx)
 3. CUDA
 4. Clone this repository
 5. Install python requirements. Please refer [requirements.txt](requirements.txt)
@@ -27,11 +27,11 @@ python setup.py build_ext --inplace
 
 | Model | How to set up json file in [configs](configs) | Sample of json file configuration|
 | :---: | :---: | :---: |
-| iSTFT-VITS | ```"istft_vits": true, ```<br>``` "upsample_rates": [8,8], ``` | istft_vits2_base.json |
-| MB-iSTFT-VITS | ```"subbands": 4,```<br>```"mb_istft_vits": true, ```<br>``` "upsample_rates": [4,4], ``` | mb_istft_vits2_base.json |
-| MS-iSTFT-VITS | ```"subbands": 4,```<br>```"ms_istft_vits": true, ```<br>``` "upsample_rates": [4,4], ``` | ms_istft_vits2_base.json |
-| Mini-iSTFT-VITS | ```"istft_vits": true, ```<br>``` "upsample_rates": [8,8], ```<br>```"hidden_channels": 96, ```<br>```"n_layers": 3,``` | mini_istft_vits2_base.json |
-| Mini-MB-iSTFT-VITS | ```"subbands": 4,```<br>```"mb_istft_vits": true, ```<br>``` "upsample_rates": [4,4], ```<br>```"hidden_channels": 96, ```<br>```"n_layers": 3,```<br>```"upsample_initial_channel": 256,``` | mini_mb_istft_vits2_base.json |
+| iSTFT-VITS2 | ```"istft_vits": true, ```<br>``` "upsample_rates": [8,8], ``` | istft_vits2_base.json |
+| MB-iSTFT-VITS2 | ```"subbands": 4,```<br>```"mb_istft_vits": true, ```<br>``` "upsample_rates": [4,4], ``` | mb_istft_vits2_base.json |
+| MS-iSTFT-VITS2 | ```"subbands": 4,```<br>```"ms_istft_vits": true, ```<br>``` "upsample_rates": [4,4], ``` | ms_istft_vits2_base.json |
+| Mini-iSTFT-VITS2 | ```"istft_vits": true, ```<br>``` "upsample_rates": [8,8], ```<br>```"hidden_channels": 96, ```<br>```"n_layers": 3,``` | mini_istft_vits2_base.json |
+| Mini-MB-iSTFT-VITS2 | ```"subbands": 4,```<br>```"mb_istft_vits": true, ```<br>``` "upsample_rates": [4,4], ```<br>```"hidden_channels": 96, ```<br>```"n_layers": 3,```<br>```"upsample_initial_channel": 256,``` | mini_mb_istft_vits2_base.json |
 
 ## Training Example
 ```sh
@@ -43,3 +43,4 @@ python train.py -c configs/mini_mb_istft_vits2_base.json -m models/test
 - [p0p4k/vits2_pytorch](https://github.com/p0p4k/vits2_pytorch)
 - [MasayaKawamura/MB-iSTFT-VITS](https://github.com/MasayaKawamura/MB-iSTFT-VITS)
 - [ORI-Muchim/PolyLangVITS](https://github.com/ORI-Muchim/PolyLangVITS)
+- [tonnetonne814/MB-iSTFT-VITS-44100-Ja](https://github.com/tonnetonne814/MB-iSTFT-VITS-44100-Ja)

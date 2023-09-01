@@ -29,6 +29,11 @@ from phonemizer.backend.espeak.wrapper import EspeakWrapper
 _ESPEAK_LIBRARY = 'C:\Program Files\eSpeak NG\libespeak-ng.dll'
 EspeakWrapper.set_library(_ESPEAK_LIBRARY)
 '''
+# check device
+if torch.cuda.is_available() is True:
+    device = "cuda:0"
+else:
+    device = "cpu"
 
 
 def get_text(text, hps):
@@ -65,8 +70,8 @@ def vcss(inputstr): # single
     output_dir = 'output'
     sid = 0
     with torch.no_grad():
-        x_tst = stn_tst.cuda().unsqueeze(0)
-        x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).cuda()
+        x_tst = stn_tst.to(device).unsqueeze(0)
+        x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).to(device)
         audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1 / speed)[0][
                 0, 0].data.cpu().float().numpy()
     write(f'./{output_dir}/output_{sid}.wav', hps.data.sampling_rate, audio)
@@ -81,9 +86,9 @@ def vcms(inputstr, sid):
     speed = 1
     output_dir = 'output'
     with torch.no_grad():
-        x_tst = stn_tst.cuda().unsqueeze(0)
-        x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).cuda()
-        sid = torch.LongTensor([sid]).cuda()
+        x_tst = stn_tst.to(device).unsqueeze(0)
+        x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).to(device)
+        sid = torch.LongTensor([sid]).to(device)
         audio = net_g.infer(x_tst, x_tst_lengths, sid=sid, noise_scale=.667, noise_scale_w=0.8, length_scale=1 / speed)[0][
             0, 0].data.cpu().float().numpy()
     write(f'./{output_dir}/output_{sid}.wav', hps.data.sampling_rate, audio)
@@ -108,7 +113,7 @@ net_g = SynthesizerTrn(
     posterior_channels,
     hps.train.segment_size // hps.data.hop_length,
     # n_speakers=hps.data.n_speakers, #- for multi speaker
-    **hps.model).cuda()
+    **hps.model).to(device)
 _ = net_g.eval()
 
 _ = utils.load_checkpoint("./models/G_2000.pth", net_g, None)
