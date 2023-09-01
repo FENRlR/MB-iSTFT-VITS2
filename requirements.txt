@@ -11,7 +11,7 @@ Unidecode==1.1.1
 tensorboardX
 tqdm~=4.66.1
 packaging~=23.1
-pyaudio
+#pyaudio
 langdetect==1.0.9
 inflect==6.0.2
 pydantic==1.10.12
