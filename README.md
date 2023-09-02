@@ -44,3 +44,4 @@ python train.py -c configs/mini_mb_istft_vits2_base.json -m models/test
 - [MasayaKawamura/MB-iSTFT-VITS](https://github.com/MasayaKawamura/MB-iSTFT-VITS)
 - [ORI-Muchim/PolyLangVITS](https://github.com/ORI-Muchim/PolyLangVITS)
 - [tonnetonne814/MB-iSTFT-VITS-44100-Ja](https://github.com/tonnetonne814/MB-iSTFT-VITS-44100-Ja)
+- [nivibilla/efficient-vits-finetuning](https://github.com/nivibilla/efficient-vits-finetuning)
