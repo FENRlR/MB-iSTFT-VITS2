@@ -8,8 +8,8 @@ This is an Experimental build. Does not guarantee performance, therefore.
 
 ## pre-requisites
 1. Python >= 3.8
-2. [Pytorch](https://pytorch.org/get-started/previous-versions/#v1131) version 1.13.1 (+cu116 or +cu117)
-3. CUDA (11.6~11.7)
+2. CUDA (11.6 ~ 11.7)
+3. [Pytorch](https://pytorch.org/get-started/previous-versions/#v1131) version 1.13.1 (+cu116 or +cu117, depending on your version of CUDA)
 4. Clone this repository
 5. Install python requirements. Please refer [requirements.txt](requirements.txt)
     ~~1. You may need to install espeak first: `apt-get install espeak`~~
