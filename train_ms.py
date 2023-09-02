@@ -150,24 +150,75 @@ def run(rank, n_gpus, hps):
       noise_scale_delta = noise_scale_delta,
       **hps.model).cuda(rank)
   net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm).cuda(rank)
-  optim_g = torch.optim.AdamW(
-      net_g.parameters(), 
-      hps.train.learning_rate, 
-      betas=hps.train.betas, 
-      eps=hps.train.eps)
-  optim_d = torch.optim.AdamW(
-      net_d.parameters(),
-      hps.train.learning_rate, 
-      betas=hps.train.betas, 
-      eps=hps.train.eps)
-  if net_dur_disc is not None:
-    optim_dur_disc = torch.optim.AdamW(
-      net_dur_disc.parameters(),
+
+  # - [EXPERIMENTAL] 8-bit optimizers : Needs Linux environment for bitsandbytes and NVIDIA Kepler GPU or newer (>=GTX 78X)
+  if os.name == 'nt':
+    optim_g = torch.optim.AdamW(
+      net_g.parameters(),
       hps.train.learning_rate,
       betas=hps.train.betas,
       eps=hps.train.eps)
+    optim_d = torch.optim.AdamW(
+      net_d.parameters(),
+      hps.train.learning_rate,
+      betas=hps.train.betas,
+      eps=hps.train.eps)
+
+    if net_dur_disc is not None:
+      optim_dur_disc = torch.optim.AdamW(
+        net_dur_disc.parameters(),
+        hps.train.learning_rate,
+        betas=hps.train.betas,
+        eps=hps.train.eps)
+    else:
+      optim_dur_disc = None
+    print("Optimizer setting : AdamW")
   else:
-    optim_dur_disc = None
+    try:
+      import bitsandbytes as bnb
+
+      optim_g = bnb.optim.AdamW8bit(
+        net_g.parameters(),
+        hps.train.learning_rate,
+        betas=hps.train.betas,
+        eps=hps.train.eps)
+      optim_d = bnb.optim.AdamW8bit(
+        net_d.parameters(),
+        hps.train.learning_rate,
+        betas=hps.train.betas,
+        eps=hps.train.eps)
+
+      if net_dur_disc is not None:
+        optim_dur_disc = bnb.optim.AdamW8bit(
+          net_dur_disc.parameters(),
+          hps.train.learning_rate,
+          betas=hps.train.betas,
+          eps=hps.train.eps)
+      else:
+        optim_dur_disc = None
+      print("Optimizer setting : 8bit AdamW")
+    except:
+      print("Failed to load 8bit AdamW - proceeding with default AdamW")
+      optim_g = torch.optim.AdamW(
+        net_g.parameters(),
+        hps.train.learning_rate,
+        betas=hps.train.betas,
+        eps=hps.train.eps)
+      optim_d = torch.optim.AdamW(
+        net_d.parameters(),
+        hps.train.learning_rate,
+        betas=hps.train.betas,
+        eps=hps.train.eps)
+
+      if net_dur_disc is not None:
+        optim_dur_disc = torch.optim.AdamW(
+          net_dur_disc.parameters(),
+          hps.train.learning_rate,
+          betas=hps.train.betas,
+          eps=hps.train.eps)
+      else:
+        optim_dur_disc = None
+      print("Optimizer setting : AdamW")
     
   net_g = DDP(net_g, device_ids=[rank], find_unused_parameters=True)
   net_d = DDP(net_d, device_ids=[rank], find_unused_parameters=True)

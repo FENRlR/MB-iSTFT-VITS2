@@ -13,10 +13,7 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import autocast, GradScaler
 import tqdm
-
 from pqmf import PQMF
-
-
 import commons
 import utils
 from data_utils import (
@@ -40,11 +37,10 @@ from losses import (
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from text.symbols import symbols
 
-
-
 torch.autograd.set_detect_anomaly(True)
 torch.backends.cudnn.benchmark = True
 global_step = 0
+
 
 #- base vits2 : Aug 29, 2023
 def main():
@@ -74,14 +70,14 @@ def run(rank, n_gpus, hps):
     dist.init_process_group(backend='nccl', init_method='env://', world_size=n_gpus, rank=rank)
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
-  
+
   if "use_mel_posterior_encoder" in hps.model.keys() and hps.model.use_mel_posterior_encoder == True: # P.incoder for vits2
     print("Using mel posterior encoder for VITS2")
     posterior_channels = 80 #vits2
     hps.data.use_mel_posterior_encoder = True
   else:
     print("Using lin posterior encoder for VITS1")
-    posterior_channels = hps.data.filter_length // 2 + 1  
+    posterior_channels = hps.data.filter_length // 2 + 1
     hps.data.use_mel_posterior_encoder = False
 
   train_dataset = TextAudioLoader(hps.data.training_files, hps.data)
@@ -92,7 +88,7 @@ def run(rank, n_gpus, hps):
       num_replicas=n_gpus,
       rank=rank,
       shuffle=True)
-  
+
   collate_fn = TextAudioCollate()
   train_loader = DataLoader(train_dataset, num_workers=8, shuffle=False, pin_memory=True,
       collate_fn=collate_fn, batch_sampler=train_sampler)
@@ -137,17 +133,17 @@ def run(rank, n_gpus, hps):
     print("Using duration discriminator for VITS2")
     use_duration_discriminator = True
     net_dur_disc = DurationDiscriminator(
-      hps.model.hidden_channels, 
-      hps.model.hidden_channels, 
-      3, 
-      0.1, 
+      hps.model.hidden_channels,
+      hps.model.hidden_channels,
+      3,
+      0.1,
       gin_channels=hps.model.gin_channels if hps.data.n_speakers != 0 else 0,
       ).cuda(rank)
   else:
     print("NOT using any duration discriminator like VITS1")
     net_dur_disc = None
     use_duration_discriminator = False
-  
+
   net_g = SynthesizerTrn(
       len(symbols),
       posterior_channels,
@@ -156,25 +152,77 @@ def run(rank, n_gpus, hps):
       noise_scale_delta = noise_scale_delta,
       **hps.model).cuda(rank)
   net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm).cuda(rank)
-  optim_g = torch.optim.AdamW(
-      net_g.parameters(), 
-      hps.train.learning_rate, 
-      betas=hps.train.betas, 
+
+  #- [EXPERIMENTAL] 8-bit optimizers : Needs Linux environment for bitsandbytes and NVIDIA Kepler GPU or newer (>=GTX 78X)
+  if os.name == 'nt':
+    optim_g = torch.optim.AdamW(
+      net_g.parameters(),
+      hps.train.learning_rate,
+      betas=hps.train.betas,
       eps=hps.train.eps)
-  optim_d = torch.optim.AdamW(
+    optim_d = torch.optim.AdamW(
       net_d.parameters(),
-      hps.train.learning_rate, 
-      betas=hps.train.betas, 
+      hps.train.learning_rate,
+      betas=hps.train.betas,
       eps=hps.train.eps)
-  if net_dur_disc is not None:
-    optim_dur_disc = torch.optim.AdamW(
+
+    if net_dur_disc is not None:
+      optim_dur_disc = torch.optim.AdamW(
         net_dur_disc.parameters(),
         hps.train.learning_rate,
         betas=hps.train.betas,
         eps=hps.train.eps)
+    else:
+      optim_dur_disc = None
+    print("Optimizer setting : AdamW")
   else:
-    optim_dur_disc = None
-  
+    try:
+      import bitsandbytes as bnb
+
+      # BNB_CUDA_VERSION
+      optim_g = bnb.optim.AdamW8bit(
+        net_g.parameters(),
+        hps.train.learning_rate,
+        betas=hps.train.betas,
+        eps=hps.train.eps)
+      optim_d = bnb.optim.AdamW8bit(
+        net_d.parameters(),
+        hps.train.learning_rate,
+        betas=hps.train.betas,
+        eps=hps.train.eps)
+
+      if net_dur_disc is not None:
+        optim_dur_disc = bnb.optim.AdamW8bit(
+          net_dur_disc.parameters(),
+          hps.train.learning_rate,
+          betas=hps.train.betas,
+          eps=hps.train.eps)
+      else:
+        optim_dur_disc = None
+      print("Optimizer setting : 8bit AdamW")
+    except:
+      print("Failed to load 8bit AdamW - proceeding with default AdamW")
+      optim_g = torch.optim.AdamW(
+        net_g.parameters(),
+        hps.train.learning_rate,
+        betas=hps.train.betas,
+        eps=hps.train.eps)
+      optim_d = torch.optim.AdamW(
+        net_d.parameters(),
+        hps.train.learning_rate,
+        betas=hps.train.betas,
+        eps=hps.train.eps)
+
+      if net_dur_disc is not None:
+        optim_dur_disc = torch.optim.AdamW(
+          net_dur_disc.parameters(),
+          hps.train.learning_rate,
+          betas=hps.train.betas,
+          eps=hps.train.eps)
+      else:
+        optim_dur_disc = None
+      print("Optimizer setting : AdamW")
+
   net_g = DDP(net_g, device_ids=[rank], find_unused_parameters=True)
   net_d = DDP(net_d, device_ids=[rank], find_unused_parameters=True)
 
@@ -221,7 +269,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
   train_loader.batch_sampler.set_epoch(epoch)
   global global_step
-  
+
   net_g.train()
   net_d.train()
   if net_dur_disc is not None:# vits2
@@ -232,7 +280,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
   else:
       loader = train_loader
 
-  
+
   for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths) in enumerate(loader):
     if net_g.module.use_noise_scaled_mas:
       current_mas_noise_scale = net_g.module.mas_noise_scale_initial - net_g.module.noise_scale_delta * global_step
@@ -249,32 +297,32 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         mel = spec
       else:
         mel = spec_to_mel_torch(
-            spec, 
-            hps.data.filter_length, 
-            hps.data.n_mel_channels, 
+            spec,
+            hps.data.filter_length,
+            hps.data.n_mel_channels,
             hps.data.sampling_rate,
-            hps.data.mel_fmin, 
+            hps.data.mel_fmin,
             hps.data.mel_fmax)
       y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
       y_hat_mel = mel_spectrogram_torch(
-          y_hat.squeeze(1), 
-          hps.data.filter_length, 
-          hps.data.n_mel_channels, 
-          hps.data.sampling_rate, 
-          hps.data.hop_length, 
-          hps.data.win_length, 
-          hps.data.mel_fmin, 
+          y_hat.squeeze(1),
+          hps.data.filter_length,
+          hps.data.n_mel_channels,
+          hps.data.sampling_rate,
+          hps.data.hop_length,
+          hps.data.win_length,
+          hps.data.mel_fmin,
           hps.data.mel_fmax
       )
 
-      y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
+      y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice
 
       # Discriminator
       y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
       with autocast(enabled=False):
         loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(y_d_hat_r, y_d_hat_g)
         loss_disc_all = loss_disc
-      
+
       # Duration Discriminator
       if net_dur_disc is not None:
         y_dur_hat_r, y_dur_hat_g = net_dur_disc(hidden_x.detach(), x_mask.detach(), logw_.detach(), logw.detach()) # logw is predicted duration, logw_ is real duration
@@ -306,7 +354,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
         loss_fm = feature_loss(fmap_r, fmap_g)
         loss_gen, losses_gen = generator_loss(y_d_hat_g)
-        
+
 
         if hps.model.mb_istft_vits == True:
           pqmf = PQMF(y.device)
@@ -319,7 +367,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         if net_dur_disc is not None:
           loss_dur_gen, losses_dur_gen = generator_loss(y_dur_hat_g)
           loss_gen_all += loss_dur_gen
-        
+
     optim_g.zero_grad()
     scaler.scale(loss_gen_all).backward()
     scaler.unscale_(optim_g)
@@ -337,7 +385,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           epoch,
           100. * batch_idx / len(train_loader)))
         logger.info([x.item() for x in losses] + [global_step, lr])
-        
+
         scalar_dict = {"loss/g/total": loss_gen_all, "loss/d/total": loss_disc_all, "learning_rate": lr, "grad_norm_d": grad_norm_d, "grad_norm_g": grad_norm_g}
 
         if net_dur_disc is not None: #2인 경우
@@ -353,15 +401,15 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         #   scalar_dict.update({"loss/dur_disc_g" : f"{losses_dur_disc_g}"})
         #   scalar_dict.update({"loss/dur_gen" : f"{loss_dur_gen}"})
 
-        image_dict = { 
+        image_dict = {
             "slice/mel_org": utils.plot_spectrogram_to_numpy(y_mel[0].data.cpu().numpy()),
-            "slice/mel_gen": utils.plot_spectrogram_to_numpy(y_hat_mel[0].data.cpu().numpy()), 
+            "slice/mel_gen": utils.plot_spectrogram_to_numpy(y_hat_mel[0].data.cpu().numpy()),
             "all/mel": utils.plot_spectrogram_to_numpy(mel[0].data.cpu().numpy()),
             "all/attn": utils.plot_alignment_to_numpy(attn[0,0].data.cpu().numpy())
         }
         utils.summarize(
           writer=writer,
-          global_step=global_step, 
+          global_step=global_step,
           images=image_dict,
           scalars=scalar_dict)
 
@@ -372,11 +420,11 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         if net_dur_disc is not None:
           utils.save_checkpoint(net_dur_disc, optim_dur_disc, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "DUR_{}.pth".format(global_step)))
     global_step += 1
-  
+
   if rank == 0:
     logger.info('====> Epoch: {}'.format(epoch))
 
- 
+
 def evaluate(hps, generator, eval_loader, writer_eval):
     generator.eval()
     with torch.no_grad():
@@ -401,11 +449,11 @@ def evaluate(hps, generator, eval_loader, writer_eval):
         mel = spec
       else:
         mel = spec_to_mel_torch(
-            spec, 
-            hps.data.filter_length, 
-            hps.data.n_mel_channels, 
+            spec,
+            hps.data.filter_length,
+            hps.data.n_mel_channels,
             hps.data.sampling_rate,
-            hps.data.mel_fmin, 
+            hps.data.mel_fmin,
             hps.data.mel_fmax)
       y_hat_mel = mel_spectrogram_torch(
         y_hat.squeeze(1).float(),
@@ -429,14 +477,14 @@ def evaluate(hps, generator, eval_loader, writer_eval):
 
     utils.summarize(
       writer=writer_eval,
-      global_step=global_step, 
+      global_step=global_step,
       images=image_dict,
       audios=audio_dict,
       audio_sampling_rate=hps.data.sampling_rate
     )
     generator.train()
 
-                           
+
 if __name__ == "__main__":
   os.environ["TORCH_DISTRIBUTED_DEBUG"] = "DETAIL"
   main()
