@@ -4,7 +4,10 @@
 
 A... [vits2_pytorch](https://github.com/p0p4k/vits2_pytorch) and [MB-iSTFT-VITS](https://github.com/MasayaKawamura/MB-iSTFT-VITS) hybrid... Gods, an abomination! Who created this atrocity?
 
-This is an Experimental build. Does not guarantee performance, therefore.
+This is an experimental build. Does not guarantee performance, therefore. 
+
+According to [shigabeev](https://github.com/shigabeev)'s [experiment](https://github.com/FENRlR/MB-iSTFT-VITS2/issues/2) it can now dare claim the word SOTA (at least for Russian).
+ 
 
 ## pre-requisites
 1. Python >= 3.8
