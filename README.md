@@ -6,7 +6,7 @@ A... [vits2_pytorch](https://github.com/p0p4k/vits2_pytorch) and [MB-iSTFT-VITS]
 
 This is an experimental build. Does not guarantee performance, therefore. 
 
-According to [shigabeev](https://github.com/shigabeev)'s [experiment](https://github.com/FENRlR/MB-iSTFT-VITS2/issues/2) it can now dare claim the word SOTA (at least for Russian).
+According to [shigabeev](https://github.com/shigabeev)'s [experiment](https://github.com/FENRlR/MB-iSTFT-VITS2/issues/2), it can now dare claim the word SOTA for its performance (at least for Russian).
  
 
 ## pre-requisites
