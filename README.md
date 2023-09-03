@@ -2,7 +2,7 @@
 
 ![Alt text](resources/image6.png)
 
-A... vits2_pytorch and MB-iSTFT-VITS hybrid... Gods, an abomination! Who created this atrocity?
+A... [vits2_pytorch](https://github.com/p0p4k/vits2_pytorch) and [MB-iSTFT-VITS](https://github.com/MasayaKawamura/MB-iSTFT-VITS) hybrid... Gods, an abomination! Who created this atrocity?
 
 This is an Experimental build. Does not guarantee performance, therefore.
 
