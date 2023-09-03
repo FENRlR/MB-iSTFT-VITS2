@@ -13,6 +13,25 @@ from unidecode import unidecode
 from phonemizer import phonemize
 
 
+_whitespace_re = re.compile(r'\s+')
+
+
+def collapse_whitespace(text):
+    return re.sub(_whitespace_re, ' ', text)
+
+
+def convert_to_ascii(text):
+    return unidecode(text)
+
+#- For replication of https://github.com/FENRlR/MB-iSTFT-VITS2/issues/2
+# you may need to replace the symbol to Russian one
+def basic_cleaners(text):
+    '''Basic pipeline that lowercases and collapses whitespace without transliteration.'''
+    text = text.lower()
+    text = collapse_whitespace(text)
+    return text
+
+
 def fix_g2pk2_error(text):
     new_text = ""
     i = 0
