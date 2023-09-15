@@ -1,3 +1,11 @@
+''' 
+#- from https://github.com/keithito/tacotron
+Cleaners are transformations that run over the input text at both training and eval time.
+
+Cleaners can be selected by passing a comma-delimited list of cleaner names as the "cleaners"
+hyperparameter.
+'''
+
 import re
 from text.japanese import japanese_to_romaji_with_accent, japanese_to_ipa, japanese_to_ipa2, japanese_to_ipa3
 from text.korean import latin_to_hangul, number_to_hangul, divide_hangul, korean_to_lazy_ipa, korean_to_ipa
@@ -22,6 +30,15 @@ def collapse_whitespace(text):
 
 def convert_to_ascii(text):
     return unidecode(text)
+
+
+def transliteration_cleaners(text):
+    '''Pipeline for non-English text that transliterates to ASCII.'''
+    text = convert_to_ascii(text)
+    text = lowercase(text)
+    text = collapse_whitespace(text)
+    return text
+
 
 #- For replication of https://github.com/FENRlR/MB-iSTFT-VITS2/issues/2
 # you may need to replace the symbol to Russian one
