@@ -41,14 +41,14 @@ According to [shigabeev](https://github.com/shigabeev)'s [experiment](https://gi
    4. Run preprocessing with a [cleaner](text/cleaners.py) of your interest. You may change the [symbols](text/symbols.py) as well.
       - Single speaker
       ```
-      python preprocess.py --text_index 1 --filelists path_to_train.txt --text_cleaners cleaner_name
-      python preprocess.py --text_index 1 --filelists path_to_val.txt --text_cleaners cleaner_name
+      python preprocess.py --text_index 1 --filelists PATH_TO_train.txt --text_cleaners CLEANER_NAME
+      python preprocess.py --text_index 1 --filelists PATH_TO_val.txt --text_cleaners CLEANER_NAME
       ```
       
       - Multi speaker
       ```
-      python preprocess.py --text_index 2 --filelists path_to_train.txt --text_cleaners cleaner_name
-      python preprocess.py --text_index 2 --filelists path_to_val.txt --text_cleaners cleaner_name
+      python preprocess.py --text_index 2 --filelists PATH_TO_train.txt --text_cleaners CLEANER_NAME
+      python preprocess.py --text_index 2 --filelists PATH_TO_val.txt --text_cleaners CLEANER_NAME
       ```
       The resulting cleaned text would be like [this](filelists/ljs_audio_text_test_filelist.txt.cleaned). <sup>[ex - multi](filelists/vctk_audio_sid_text_test_filelist.txt.cleaned)</sup> 
       
