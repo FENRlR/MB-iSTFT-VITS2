@@ -1,11 +1,3 @@
-''' 
-#- from https://github.com/keithito/tacotron
-Cleaners are transformations that run over the input text at both training and eval time.
-
-Cleaners can be selected by passing a comma-delimited list of cleaner names as the "cleaners"
-hyperparameter.
-'''
-
 import re
 from text.japanese import japanese_to_romaji_with_accent, japanese_to_ipa, japanese_to_ipa2, japanese_to_ipa3
 from text.korean import latin_to_hangul, number_to_hangul, divide_hangul, korean_to_lazy_ipa, korean_to_ipa
@@ -23,6 +15,39 @@ from phonemizer import phonemize
 
 _whitespace_re = re.compile(r'\s+')
 
+# Regular expression matching Japanese without punctuation marks:
+_japanese_characters = re.compile(r'[A-Za-z\d\u3005\u3040-\u30ff\u4e00-\u9fff\uff11-\uff19\uff21-\uff3a\uff41-\uff5a\uff66-\uff9d]')
+
+# Regular expression matching non-Japanese characters or punctuation marks:
+_japanese_marks = re.compile(r'[^A-Za-z\d\u3005\u3040-\u30ff\u4e00-\u9fff\uff11-\uff19\uff21-\uff3a\uff41-\uff5a\uff66-\uff9d]')
+
+# List of (regular expression, replacement) pairs for abbreviations:
+_abbreviations = [(re.compile('\\b%s\\.' % x[0], re.IGNORECASE), x[1]) for x in [
+  ('mrs', 'misess'),
+  ('mr', 'mister'),
+  ('dr', 'doctor'),
+  ('st', 'saint'),
+  ('co', 'company'),
+  ('jr', 'junior'),
+  ('maj', 'major'),
+  ('gen', 'general'),
+  ('drs', 'doctors'),
+  ('rev', 'reverend'),
+  ('lt', 'lieutenant'),
+  ('hon', 'honorable'),
+  ('sgt', 'sergeant'),
+  ('capt', 'captain'),
+  ('esq', 'esquire'),
+  ('ltd', 'limited'),
+  ('col', 'colonel'),
+  ('ft', 'fort'),
+]]
+
+
+def expand_abbreviations(text):
+  for regex, replacement in _abbreviations:
+    text = re.sub(regex, replacement, text)
+  return text
 
 def collapse_whitespace(text):
     return re.sub(_whitespace_re, ' ', text)
@@ -30,15 +55,6 @@ def collapse_whitespace(text):
 
 def convert_to_ascii(text):
     return unidecode(text)
-
-
-def transliteration_cleaners(text):
-    '''Pipeline for non-English text that transliterates to ASCII.'''
-    text = convert_to_ascii(text)
-    text = lowercase(text)
-    text = collapse_whitespace(text)
-    return text
-
 
 #- For replication of https://github.com/FENRlR/MB-iSTFT-VITS2/issues/2
 # you may need to replace the symbol to Russian one
@@ -72,6 +88,14 @@ def english_cleaners2(text):
   return english_to_ipa2(text)
 
 
+def english_cleaners3(text): # needs espeak - pip install espeak
+    text = convert_to_ascii(text)
+    text = expand_abbreviations(text.lower())
+    phonemes = phonemize(text, language='en-us', backend='espeak', strip=True, preserve_punctuation=True,with_stress=True)
+    phonemes = collapse_whitespace(phonemes)
+    return phonemes
+
+
 def japanese_cleaners(text):
     text = japanese_to_romaji_with_accent(text)
     text = re.sub(r'([A-Za-z])$', r'\1.', text)
@@ -90,6 +114,14 @@ def korean_cleaners(text):
     text = divide_hangul(text)
     text = fix_g2pk2_error(text)
     text = re.sub(r'([\u3131-\u3163])$', r'\1.', text)
+    return text
+
+
+def korean_cleaners2(text): # KO part from cjke
+    '''Pipeline for Korean text'''
+    korean_to_ipa(text)
+    text = re.sub(r'\s+$', '', text)
+    text = re.sub(r'([^\.,!\?\-…~])$', r'\1.', text)
     return text
 
 
