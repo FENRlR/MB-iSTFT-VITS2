@@ -88,7 +88,7 @@ def english_cleaners2(text):
   return english_to_ipa2(text)
 
 
-def english_cleaners3(text): # needs espeak - pip install espeak
+def english_cleaners3(text): # needs espeak - apt-get install espeak
     text = convert_to_ascii(text)
     text = expand_abbreviations(text.lower())
     phonemes = phonemize(text, language='en-us', backend='espeak', strip=True, preserve_punctuation=True,with_stress=True)
