@@ -15,19 +15,50 @@ According to [shigabeev](https://github.com/shigabeev)'s [experiment](https://gi
 3. [Pytorch](https://pytorch.org/get-started/previous-versions/#v1131) version 1.13.1 (+cu117)
 4. Clone this repository
 5. Install python requirements. Please refer [requirements.txt](requirements.txt)
+   
     ~~1. You may need to install espeak first: `apt-get install espeak`~~
-6. Prepare datasets
-    1. ex) Download and extract the LJ Speech dataset, then rename or create a link to the dataset folder: `ln -s /path/to/LJSpeech-1.1/wavs DUMMY1`
-7. Build Monotonic Alignment Search and run preprocessing if you use your own datasets.
+6. Prepare datasets & configuration
+   
+    ~~1. ex) Download and extract the LJ Speech dataset, then rename or create a link to the dataset folder: `ln -s /path/to/LJSpeech-1.1/wavs DUMMY1`~~
+   1. wav files with 22050Hz Mono, PCM-16. 
+   2. Prepare text files. One for training<sup>[(ex)](filelists/ljs_audio_text_train_filelist.txt)</sup> and one for validation<sup>[(ex)](filelists/ljs_audio_text_val_filelist.txt)</sup>.
+      
+      - Single speaker<sup>[(ex)](filelists/ljs_audio_text_test_filelist.txt)</sup>
+      
+      ```
+      wavfile/path|transcript
+      ```
+      
 
+      - Multi speaker<sup>[(ex)](filelists/vctk_audio_sid_text_test_filelist.txt)</sup>
+      
+      ```
+      wavfile/path|speaker_id|transcript
+      ```
+   4. Run preprocessing with a [cleaner](text/cleaners.py) of your interest. You may change the [symbols](text/symbols.py) as well.
+      - Single speaker
+      ```
+      python preprocess.py --text_index 1 --filelists path_to_train.txt --text_cleaners 'cleaner_name'
+      python preprocess.py --text_index 1 --filelists path_to_val.txt --text_cleaners 'cleaner_name'
+      ```
+      
+      - Multi speaker
+      ```
+      python preprocess.py --text_index 2 --filelists path_to_train.txt --text_cleaners 'cleaner_name'
+      python preprocess.py --text_index 2 --filelists path_to_val.txt --text_cleaners 'cleaner_name'
+      ```
+      The resulting cleaned text would be like [this](filelists/ljs_audio_text_test_filelist.txt.cleaned). <sup>[ex - multi](filelists/vctk_audio_sid_text_test_filelist.txt.cleaned)</sup> 
+      
+7. Build Monotonic Alignment Search.
 ```sh
 # Cython-version Monotonoic Alignment Search
 cd monotonic_align
 mkdir monotonic_align
 python setup.py build_ext --inplace
 ```
-## Setting json file in [configs](configs)
+8. Edit [configurations](configs) based on files and cleaners you used.
 
+## Setting json file in [configs](configs)
 | Model | How to set up json file in [configs](configs) | Sample of json file configuration|
 | :---: | :---: | :---: |
 | iSTFT-VITS2 | ```"istft_vits": true, ```<br>``` "upsample_rates": [8,8], ``` | istft_vits2_base.json |
@@ -38,8 +69,9 @@ python setup.py build_ext --inplace
 
 ## Training Example
 ```sh
-python train.py -c configs/mini_mb_istft_vits2_base.json -m models/test
+python train.py -c configs/mb_istft_vits2_base.json -m models/test
 ```
+train_ms.py for multi speaker
 
 ## Credits
 - [jaywalnut310/vits](https://github.com/jaywalnut310/vits)
