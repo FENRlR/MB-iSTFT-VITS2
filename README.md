@@ -79,3 +79,4 @@ train_ms.py for multi speaker
 - [MasayaKawamura/MB-iSTFT-VITS](https://github.com/MasayaKawamura/MB-iSTFT-VITS)
 - [ORI-Muchim/PolyLangVITS](https://github.com/ORI-Muchim/PolyLangVITS)
 - [tonnetonne814/MB-iSTFT-VITS-44100-Ja](https://github.com/tonnetonne814/MB-iSTFT-VITS-44100-Ja)
+- [misakiudon/MB-iSTFT-VITS-multilingual](https://github.com/misakiudon/MB-iSTFT-VITS-multilingual)
