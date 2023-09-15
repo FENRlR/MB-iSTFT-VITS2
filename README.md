@@ -21,7 +21,10 @@ According to [shigabeev](https://github.com/shigabeev)'s [experiment](https://gi
    
     ~~1. You may need to install espeak first: `apt-get install espeak`~~
    
-   If you want to proceed with those cleaned texts in [filelists](filelists), you need to install espeak.`apt-get install espeak`
+   If you want to proceed with those cleaned texts in [filelists](filelists), you need to install espeak.
+   ```
+   apt-get install espeak
+   ```
 7. Prepare datasets & configuration
    
     ~~1. ex) Download and extract the LJ Speech dataset, then rename or create a link to the dataset folder: `ln -s /path/to/LJSpeech-1.1/wavs DUMMY1`~~
