@@ -20,6 +20,8 @@ According to [shigabeev](https://github.com/shigabeev)'s [experiment](https://gi
    ```
    
     ~~1. You may need to install espeak first: `apt-get install espeak`~~
+   
+   If you want to proceed with those cleaned texts in [filelists](filelists), you need to install espeak.`apt-get install espeak`
 7. Prepare datasets & configuration
    
     ~~1. ex) Download and extract the LJ Speech dataset, then rename or create a link to the dataset folder: `ln -s /path/to/LJSpeech-1.1/wavs DUMMY1`~~
@@ -52,7 +54,7 @@ According to [shigabeev](https://github.com/shigabeev)'s [experiment](https://gi
       ```
       The resulting cleaned text would be like [this](filelists/ljs_audio_text_test_filelist.txt.cleaned). <sup>[ex - multi](filelists/vctk_audio_sid_text_test_filelist.txt.cleaned)</sup> 
       
-8. Build Monotonic Alignment Search.
+9. Build Monotonic Alignment Search.
 ```sh
 # Cython-version Monotonoic Alignment Search
 cd monotonic_align
