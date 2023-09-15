@@ -69,9 +69,9 @@ python setup.py build_ext --inplace
 
 ## Training Example
 ```sh
+# train_ms.py for multi speaker
 python train.py -c configs/mb_istft_vits2_base.json -m models/test
 ```
-train_ms.py for multi speaker
 
 ## Credits
 - [jaywalnut310/vits](https://github.com/jaywalnut310/vits)
