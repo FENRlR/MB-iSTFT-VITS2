@@ -26,14 +26,14 @@ According to [shigabeev](https://github.com/shigabeev)'s [experiment](https://gi
       - Single speaker<sup>[(ex)](filelists/ljs_audio_text_test_filelist.txt)</sup>
       
       ```
-      wavfile/path|transcript
+      wavfile_path|transcript
       ```
       
 
       - Multi speaker<sup>[(ex)](filelists/vctk_audio_sid_text_test_filelist.txt)</sup>
       
       ```
-      wavfile/path|speaker_id|transcript
+      wavfile_path|speaker_id|transcript
       ```
    4. Run preprocessing with a [cleaner](text/cleaners.py) of your interest. You may change the [symbols](text/symbols.py) as well.
       - Single speaker
