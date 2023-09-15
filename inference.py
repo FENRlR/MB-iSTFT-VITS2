@@ -62,7 +62,7 @@ def langdetector(text):  # from PolyLangVITS
 
 def vcss(inputstr): # single
     fltstr = re.sub(r"[\[\]\(\)\{\}]", "", inputstr)
-    fltstr = langdetector(fltstr) # can be optional depending on cleaner you use
+    #fltstr = langdetector(fltstr) #- optional for cjke/cjks type cleaners
     stn_tst = get_text(fltstr, hps)
 
     speed = 1
