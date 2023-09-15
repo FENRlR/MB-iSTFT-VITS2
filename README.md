@@ -28,7 +28,7 @@ According to [shigabeev](https://github.com/shigabeev)'s [experiment](https://gi
 7. Prepare datasets & configuration
    
     ~~1. ex) Download and extract the LJ Speech dataset, then rename or create a link to the dataset folder: `ln -s /path/to/LJSpeech-1.1/wavs DUMMY1`~~
-   1. wav files with 22050Hz Mono, PCM-16. 
+   1. wav files (22050Hz Mono, PCM-16) 
    2. Prepare text files. One for training<sup>[(ex)](filelists/ljs_audio_text_train_filelist.txt)</sup> and one for validation<sup>[(ex)](filelists/ljs_audio_text_val_filelist.txt)</sup>.
       
       - Single speaker<sup>[(ex)](filelists/ljs_audio_text_test_filelist.txt)</sup>
