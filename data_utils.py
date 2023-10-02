@@ -348,7 +348,7 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
         super().__init__(dataset, num_replicas=num_replicas, rank=rank, shuffle=shuffle)
         self.lengths = dataset.lengths
         self.batch_size = batch_size
-        self.boundaries = boundaries
+        self.boundaries = boundaries # [32, 300, 400, 500, 600, 700, 800, 900, 1000]
   
         self.buckets, self.num_samples_per_bucket = self._create_buckets()
         self.total_size = sum(self.num_samples_per_bucket)
@@ -398,7 +398,12 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
           # add extra samples to make it evenly divisible
           rem = num_samples_bucket - len_bucket
           ids_bucket = ids_bucket + ids_bucket * (rem // len_bucket) + ids_bucket[:(rem % len_bucket)]
-  
+          '''
+          if len_bucket > 0: #- fix for  https://github.com/FENRlR/MB-iSTFT-VITS2/issues/9
+              rem = num_samples_bucket - len_bucket
+              ids_bucket = ids_bucket + ids_bucket * (rem // len_bucket) + ids_bucket[:(rem % len_bucket)]
+          '''
+
           # subsample
           ids_bucket = ids_bucket[self.rank::self.num_replicas]
   
