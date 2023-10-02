@@ -56,9 +56,10 @@ def collapse_whitespace(text):
 def convert_to_ascii(text):
     return unidecode(text)
 
-#- For replication of https://github.com/FENRlR/MB-iSTFT-VITS2/issues/2
-# you may need to replace the symbol to Russian one
+
 def basic_cleaners(text):
+    # - For replication of https://github.com/FENRlR/MB-iSTFT-VITS2/issues/2
+    # you may need to replace the symbol to Russian one
     '''Basic pipeline that lowercases and collapses whitespace without transliteration.'''
     text = text.lower()
     text = collapse_whitespace(text)
@@ -134,6 +135,20 @@ def chinese_cleaners(text):
     return text
 
 
+def sanskrit_cleaners(text):
+    text = text.replace('॥', '।').replace('ॐ', 'ओम्')
+    text = re.sub(r'([^।])$', r'\1।', text)
+    return text
+
+
+
+# ------------------------------
+''' cjke type cleaners below '''
+#- text for these cleaners must be labeled first
+# ex1 (single) : some.wav|[EN]put some text here[EN]
+# ex2 (multi) : some.wav|0|[EN]put some text here[EN]
+# ------------------------------
+
 def zh_ja_mixture_cleaners(text):
     text = re.sub(r'\[ZH\](.*?)\[ZH\]',
                   lambda x: chinese_to_romaji(x.group(1))+' ', text)
@@ -141,12 +156,6 @@ def zh_ja_mixture_cleaners(text):
         x.group(1)).replace('ts', 'ʦ').replace('u', 'ɯ').replace('...', '…')+' ', text)
     text = re.sub(r'\s+$', '', text)
     text = re.sub(r'([^\.,!\?\-…~])$', r'\1.', text)
-    return text
-
-
-def sanskrit_cleaners(text):
-    text = text.replace('॥', '।').replace('ॐ', 'ओम्')
-    text = re.sub(r'([^।])$', r'\1।', text)
     return text
 
 
@@ -177,6 +186,7 @@ def cjks_cleaners(text):
     text = re.sub(r'([^\.,!\?\-…~])$', r'\1.', text)
     return text
 
+
 def cjke_cleaners(text):
     text = re.sub(r'\[ZH\](.*?)\[ZH\]', lambda x: chinese_to_lazy_ipa(x.group(1)).replace(
         'ʧ', 'tʃ').replace('ʦ', 'ts').replace('ɥan', 'ɥæn')+' ', text)
@@ -189,6 +199,7 @@ def cjke_cleaners(text):
     text = re.sub(r'\s+$', '', text)
     text = re.sub(r'([^\.,!\?\-…~])$', r'\1.', text)
     return text
+
 
 def cjke_cleaners2(text):
     text = re.sub(r'\[ZH\](.*?)\[ZH\]',
@@ -204,6 +215,8 @@ def cjke_cleaners2(text):
     return text
 
 '''
+#- reserves
+
 def thai_cleaners(text):
     text = num_to_thai(text)
     text = latin_to_thai(text)

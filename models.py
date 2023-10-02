@@ -1137,14 +1137,14 @@ class SynthesizerTrn(nn.Module):
                                  gin_channels=self.enc_gin_channels)
 
         if mb_istft_vits == True:
-            print('Mutli-band iSTFT VITS2')
+            print('Multi-band iSTFT VITS2')
             self.dec = Multiband_iSTFT_Generator(inter_channels, resblock, resblock_kernel_sizes,
                                                  resblock_dilation_sizes,
                                                  upsample_rates, upsample_initial_channel, upsample_kernel_sizes,
                                                  gen_istft_n_fft, gen_istft_hop_size, subbands,
                                                  gin_channels=gin_channels)
         elif ms_istft_vits == True:
-            print('Mutli-stream iSTFT VITS2')
+            print('Multi-stream iSTFT VITS2')
             self.dec = Multistream_iSTFT_Generator(inter_channels, resblock, resblock_kernel_sizes,
                                                    resblock_dilation_sizes,
                                                    upsample_rates, upsample_initial_channel, upsample_kernel_sizes,

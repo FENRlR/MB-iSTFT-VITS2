@@ -77,9 +77,9 @@ def vcss(inputstr): # single
     print(f'./{output_dir}/output_{sid}.wav Generated!')
 
 
-def vcms(inputstr, sid):
+def vcms(inputstr, sid): # multi
     fltstr = re.sub(r"[\[\]\(\)\{\}]", "", inputstr)
-    fltstr = langdetector(fltstr)
+    #fltstr = langdetector(fltstr) #- optional for cjke/cjks type cleaners
     stn_tst = get_text(fltstr, hps)
 
     speed = 1
@@ -95,8 +95,13 @@ def vcms(inputstr, sid):
 
 
 
+# - paths
+path_to_config = "put_your_config_path_here" # path to .json
+path_to_model = "put_your_model_path_here" # path to G_xxxx.pth
 
-hps = utils.get_hparams_from_file("./configs/mini_mb_istft_vits2_base.json")
+
+
+hps = utils.get_hparams_from_file(path_to_config)
 
 if "use_mel_posterior_encoder" in hps.model.keys() and hps.model.use_mel_posterior_encoder == True:
     print("Using mel posterior encoder for VITS2")
@@ -115,7 +120,9 @@ net_g = SynthesizerTrn(
     **hps.model).to(device)
 _ = net_g.eval()
 
-_ = utils.load_checkpoint("./models/G_2000.pth", net_g, None)
+_ = utils.load_checkpoint(path_to_model, net_g, None)
+
+
 
 # - text input
 input = "I try to get the waiter's attention by blinking in morse code"
