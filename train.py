@@ -37,6 +37,9 @@ from losses import (
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from text.symbols import symbols
 
+#- [EXPERIMENTAL] 8-bit optimizers : Needs Linux environment for bitsandbytes and NVIDIA Kepler GPU or newer (>=GTX 78X)
+import bitsandbytes as bnb
+
 torch.autograd.set_detect_anomaly(True)
 torch.backends.cudnn.benchmark = True
 global_step = 0
@@ -153,19 +156,19 @@ def run(rank, n_gpus, hps):
         **hps.model).cuda(rank)
     net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm).cuda(rank)
 
-    optim_g = torch.optim.AdamW(
+    optim_g = bnb.optim.AdamW8bit(
         net_g.parameters(),
         hps.train.learning_rate,
         betas=hps.train.betas,
         eps=hps.train.eps)
-    optim_d = torch.optim.AdamW(
+    optim_d = bnb.optim.AdamW8bit(
         net_d.parameters(),
         hps.train.learning_rate,
         betas=hps.train.betas,
         eps=hps.train.eps)
 
     if net_dur_disc is not None:
-        optim_dur_disc = torch.optim.AdamW(
+        optim_dur_disc = bnb.optim.AdamW8bit(
             net_dur_disc.parameters(),
             hps.train.learning_rate,
             betas=hps.train.betas,

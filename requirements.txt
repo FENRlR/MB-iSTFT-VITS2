@@ -27,3 +27,5 @@ jieba==0.42.1
 tensorboard
 # ipython for notebook inference
 ipython
+# bitsandbytes for 8-bit optimizers
+bitsandbytes==0.41.1
