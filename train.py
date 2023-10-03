@@ -40,6 +40,9 @@ from text.symbols import symbols
 #- [EXPERIMENTAL] 8-bit optimizers : Needs Linux environment for bitsandbytes and NVIDIA Kepler GPU or newer (>=GTX 78X)
 import bitsandbytes as bnb
 
+#- [EXPERIMENTAL] trident : pip install git+https://github.com/kakaobrain/trident.git
+#import trident
+
 torch.autograd.set_detect_anomaly(True)
 torch.backends.cudnn.benchmark = True
 global_step = 0
