@@ -14,7 +14,7 @@ from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from commons import init_weights, get_padding
 
 from pqmf import PQMF
-from stft import TorchSTFT, OnnxSTFT
+from stft import TorchSTFT
 
 AVAILABLE_FLOW_TYPES = ["pre_conv", "fft", "mono_layer_inter_residual", "mono_layer_post_residual"]
 
@@ -336,9 +336,6 @@ class ResidualCouplingTransformersLayer(nn.Module):  # vits2
             x = torch.cat([x0, x1], 1)
             return x
 
-    def remove_weight_norm(self): # !
-        self.enc.remove_weight_norm()
-
 
 class FFTransformerCouplingLayer(nn.Module):  # vits2
     def __init__(self,
@@ -598,11 +595,6 @@ class ResidualCouplingTransformersBlock(nn.Module):  # vits2
                 x = flow(x, x_mask, g=g, reverse=reverse)
         return x
 
-    def remove_weight_norm(self): # !
-        for i, l in enumerate(self.flows):
-            if i % 2 == 0:
-                l.remove_weight_norm()
-
 
 class ResidualCouplingBlock(nn.Module):
     def __init__(self,
@@ -645,11 +637,6 @@ class ResidualCouplingBlock(nn.Module):
             for flow in reversed(self.flows):
                 x = flow(x, x_mask, g=g, reverse=reverse)
         return x
-
-    def remove_weight_norm(self): # !
-        for i, l in enumerate(self.flows):
-            if i % 2 == 0:
-                l.remove_weight_norm()
 
 
 class PosteriorEncoder(nn.Module):
@@ -742,8 +729,7 @@ class Generator(torch.nn.Module):
 
 class iSTFT_Generator(torch.nn.Module):
     def __init__(self, initial_channel, resblock, resblock_kernel_sizes, resblock_dilation_sizes, upsample_rates,
-                 upsample_initial_channel, upsample_kernel_sizes, gen_istft_n_fft, gen_istft_hop_size,
-                 gin_channels=0, is_onnx=False):
+                 upsample_initial_channel, upsample_kernel_sizes, gen_istft_n_fft, gen_istft_hop_size, gin_channels=0):
         super(iSTFT_Generator, self).__init__()
         # self.h = h
         self.gen_istft_n_fft = gen_istft_n_fft
@@ -771,19 +757,11 @@ class iSTFT_Generator(torch.nn.Module):
         self.ups.apply(init_weights)
         self.conv_post.apply(init_weights)
         self.reflection_pad = torch.nn.ReflectionPad1d((1, 0))
-        '''
         self.stft = TorchSTFT(filter_length=self.gen_istft_n_fft, hop_length=self.gen_istft_hop_size,
                               win_length=self.gen_istft_n_fft)
-        '''
-        # - for onnx
-        if is_onnx == True:
-            self.stft = OnnxSTFT(filter_length=self.gen_istft_n_fft, hop_length=self.gen_istft_hop_size,
-                                 win_length=self.gen_istft_n_fft)
-        else:
-            self.stft = TorchSTFT(filter_length=self.gen_istft_n_fft, hop_length=self.gen_istft_hop_size,
-                                  win_length=self.gen_istft_n_fft)
 
     def forward(self, x, g=None):
+
         x = self.conv_pre(x)
         for i in range(self.num_upsamples):
             x = F.leaky_relu(x, modules.LRELU_SLOPE)
@@ -813,10 +791,10 @@ class iSTFT_Generator(torch.nn.Module):
         remove_weight_norm(self.conv_post)
 
 
-class Multiband_iSTFT_Generator(torch.nn.Module): # !
+class Multiband_iSTFT_Generator(torch.nn.Module):
     def __init__(self, initial_channel, resblock, resblock_kernel_sizes, resblock_dilation_sizes, upsample_rates,
                  upsample_initial_channel, upsample_kernel_sizes, gen_istft_n_fft, gen_istft_hop_size, subbands,
-                 gin_channels=0, is_onnx=False):
+                 gin_channels=0):
         super(Multiband_iSTFT_Generator, self).__init__()
         # self.h = h
         self.subbands = subbands
@@ -849,18 +827,9 @@ class Multiband_iSTFT_Generator(torch.nn.Module): # !
         self.gen_istft_n_fft = gen_istft_n_fft
         self.gen_istft_hop_size = gen_istft_hop_size
 
-        #- for onnx
-        if is_onnx == True:
-            self.stft = OnnxSTFT(filter_length=self.gen_istft_n_fft, hop_length=self.gen_istft_hop_size, win_length=self.gen_istft_n_fft)
-        else:
-            self.stft = TorchSTFT(filter_length=self.gen_istft_n_fft, hop_length=self.gen_istft_hop_size, win_length=self.gen_istft_n_fft)
-
     def forward(self, x, g=None):
-        '''
         stft = TorchSTFT(filter_length=self.gen_istft_n_fft, hop_length=self.gen_istft_hop_size,
-                         win_length=self.gen_istft_n_fft).to(x.device) # !
-        '''
-        stft = self.stft.to(x.device)
+                         win_length=self.gen_istft_n_fft).to(x.device)
         pqmf = PQMF(x.device)
 
         x = self.conv_pre(x)  # [B, ch, length]
@@ -906,7 +875,7 @@ class Multiband_iSTFT_Generator(torch.nn.Module): # !
 class Multistream_iSTFT_Generator(torch.nn.Module):
     def __init__(self, initial_channel, resblock, resblock_kernel_sizes, resblock_dilation_sizes, upsample_rates,
                  upsample_initial_channel, upsample_kernel_sizes, gen_istft_n_fft, gen_istft_hop_size, subbands,
-                 gin_channels=0, is_onnx=False):
+                 gin_channels=0):
         super(Multistream_iSTFT_Generator, self).__init__()
         # self.h = h
         self.subbands = subbands
@@ -947,19 +916,9 @@ class Multistream_iSTFT_Generator(torch.nn.Module):
         self.multistream_conv_post = weight_norm(Conv1d(self.subbands, 1, kernel_size=63, bias=False, padding=get_padding(63, 1))) # from MB-iSTFT-VITS-44100-Ja
         self.multistream_conv_post.apply(init_weights)
 
-        #- for onnx
-        if is_onnx == True:
-            self.stft = OnnxSTFT(filter_length=self.gen_istft_n_fft, hop_length=self.gen_istft_hop_size, win_length=self.gen_istft_n_fft)
-        else:
-            self.stft = TorchSTFT(filter_length=self.gen_istft_n_fft, hop_length=self.gen_istft_hop_size, win_length=self.gen_istft_n_fft)
-
     def forward(self, x, g=None):
-        '''
         stft = TorchSTFT(filter_length=self.gen_istft_n_fft, hop_length=self.gen_istft_hop_size,
-                         win_length=self.gen_istft_n_fft).to(x.device) # !
-        '''
-        stft = self.stft.to(x.device)
-
+                         win_length=self.gen_istft_n_fft).to(x.device)
         # pqmf = PQMF(x.device)
 
         x = self.conv_pre(x)  # [B, ch, length]
@@ -1127,7 +1086,6 @@ class SynthesizerTrn(nn.Module):
                  mb_istft_vits=False,
                  subbands=False,
                  istft_vits=False,
-                 is_onnx=False,
                  **kwargs):
 
         super().__init__()
@@ -1184,7 +1142,7 @@ class SynthesizerTrn(nn.Module):
                                                  resblock_dilation_sizes,
                                                  upsample_rates, upsample_initial_channel, upsample_kernel_sizes,
                                                  gen_istft_n_fft, gen_istft_hop_size, subbands,
-                                                 gin_channels=gin_channels, is_onnx=False)
+                                                 gin_channels=gin_channels)
         elif ms_istft_vits == True:
             print('Multi-stream iSTFT VITS2')
             self.dec = Multistream_iSTFT_Generator(inter_channels, resblock, resblock_kernel_sizes,
