@@ -1184,19 +1184,19 @@ class SynthesizerTrn(nn.Module):
                                                  resblock_dilation_sizes,
                                                  upsample_rates, upsample_initial_channel, upsample_kernel_sizes,
                                                  gen_istft_n_fft, gen_istft_hop_size, subbands,
-                                                 gin_channels=gin_channels, is_onnx=False)
+                                                 gin_channels=gin_channels, is_onnx=is_onnx)
         elif ms_istft_vits == True:
             print('Multi-stream iSTFT VITS2')
             self.dec = Multistream_iSTFT_Generator(inter_channels, resblock, resblock_kernel_sizes,
                                                    resblock_dilation_sizes,
                                                    upsample_rates, upsample_initial_channel, upsample_kernel_sizes,
                                                    gen_istft_n_fft, gen_istft_hop_size, subbands,
-                                                   gin_channels=gin_channels, is_onnx=False)
+                                                   gin_channels=gin_channels, is_onnx=is_onnx)
         elif istft_vits == True:
             print('iSTFT-VITS2')
             self.dec = iSTFT_Generator(inter_channels, resblock, resblock_kernel_sizes, resblock_dilation_sizes,
                                        upsample_rates, upsample_initial_channel, upsample_kernel_sizes, gen_istft_n_fft,
-                                       gen_istft_hop_size, gin_channels=gin_channels, is_onnx=False)
+                                       gen_istft_hop_size, gin_channels=gin_channels, is_onnx=is_onnx)
         else:
             print('No iSTFT arguments found in json file')
             self.dec = Generator(inter_channels, resblock, resblock_kernel_sizes, resblock_dilation_sizes,
