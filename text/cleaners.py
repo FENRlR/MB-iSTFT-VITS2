@@ -1,6 +1,6 @@
 import re
 from text.japanese import japanese_to_romaji_with_accent, japanese_to_ipa, japanese_to_ipa2, japanese_to_ipa3
-from text.korean import latin_to_hangul, number_to_hangul, divide_hangul, korean_to_lazy_ipa, korean_to_ipa
+from text.korean import latin_to_hangul, number_to_hangul, divide_hangul, korean_to_lazy_ipa, korean_to_ipa, fix_g2pk2_error
 from g2pk2 import G2p
 from text.mandarin import number_to_chinese, chinese_to_bopomofo, latin_to_bopomofo, chinese_to_romaji, chinese_to_lazy_ipa, chinese_to_ipa, chinese_to_ipa2
 #from text.sanskrit import devanagari_to_ipa
@@ -65,7 +65,7 @@ def basic_cleaners(text):
     text = collapse_whitespace(text)
     return text
 
-
+'''
 def fix_g2pk2_error(text):
     new_text = ""
     i = 0
@@ -79,7 +79,7 @@ def fix_g2pk2_error(text):
 
     new_text += text[i:]
     return new_text
-
+'''
 
 def english_cleaners(text):
   return english_to_ipa(text)

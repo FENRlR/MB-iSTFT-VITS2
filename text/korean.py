@@ -87,6 +87,21 @@ _ipa_to_lazy_ipa = [(re.compile('%s' % x[0], re.IGNORECASE), x[1]) for x in [
 ]]
 
 
+def fix_g2pk2_error(text):
+    new_text = ""
+    i = 0
+    while i < len(text) - 4:
+        if (text[i:i+3] == 'ㅇㅡㄹ' or text[i:i+3] == 'ㄹㅡㄹ') and text[i+3] == ' ' and text[i+4] == 'ㄹ':
+            new_text += text[i:i+3] + ' ' + 'ㄴ'
+            i += 5
+        else:
+            new_text += text[i]
+            i += 1
+
+    new_text += text[i:]
+    return new_text
+
+
 def latin_to_hangul(text):
     for regex, replacement in _latin_to_hangul:
         text = re.sub(regex, replacement, text)
@@ -211,5 +226,6 @@ def korean_to_ipa(text):
     text = number_to_hangul(text)
     g2p = G2p()
     text = g2p(text)
+    text = fix_g2pk2_error(text)
     text = korean_to_lazy_ipa(text)
     return text.replace('ʧ','tʃ').replace('ʥ','dʑ')
