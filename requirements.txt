@@ -27,3 +27,6 @@ jieba==0.42.1
 tensorboard
 # ipython for notebook inference
 ipython
+# ONNX
+#onnx==1.14.1
+#onnxruntime==1.15.1
