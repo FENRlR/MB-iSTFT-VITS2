@@ -40,10 +40,11 @@
     "model": {
       "use_mel_posterior_encoder": true,
       "use_transformer_flows": true,
-      "transformer_flow_type": "pre_conv",
+      "transformer_flow_type": "pre_conv2",
       "use_spk_conditioned_encoder": false,
       "use_noise_scaled_mas": true,
       "use_duration_discriminator": true,
+      "duration_discriminator_type": "dur_disc_2",
       "ms_istft_vits": true,
       "mb_istft_vits": false,
       "istft_vits": false,

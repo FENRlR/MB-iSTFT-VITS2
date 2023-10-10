@@ -104,6 +104,45 @@ def vcms(inputstr, sid): # multi
     print(f'./{output_dir}/output_{sid}.wav Generated!')
 
 
+def ex_voice_conversion(sid_tgt): # dummy - TODO : further work
+    #import IPython.display as ipd
+    output_dir = 'ex_output'
+    dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
+    collate_fn = TextAudioSpeakerCollate()
+    loader = DataLoader(dataset, num_workers=0, shuffle=False, batch_size=1, pin_memory=False, drop_last=True, collate_fn=collate_fn)
+    data_list = list(loader)
+    # print(data_list)
+
+    with torch.no_grad():
+        x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src = [x.to(device) for x in data_list[0]]
+        '''
+        sid_tgt1 = torch.LongTensor([1]).to(device)
+        sid_tgt2 = torch.LongTensor([2]).to(device)
+        sid_tgt3 = torch.LongTensor([4]).to(device)
+        '''
+        audio = net_g.voice_conversion(spec, spec_lengths, sid_src=sid_src, sid_tgt=sid_tgt)[0][0, 0].data.cpu().float().numpy()
+        '''
+        audio1 = net_g.voice_conversion(spec, spec_lengths, sid_src=sid_src, sid_tgt=sid_tgt1)[0][0, 0].data.cpu().float().numpy()
+        audio2 = net_g.voice_conversion(spec, spec_lengths, sid_src=sid_src, sid_tgt=sid_tgt2)[0][0, 0].data.cpu().float().numpy()
+        audio3 = net_g.voice_conversion(spec, spec_lengths, sid_src=sid_src, sid_tgt=sid_tgt3)[0][0, 0].data.cpu().float().numpy()
+        '''
+
+    write(f'./{output_dir}/output_{sid_src}-{sid_tgt}.wav', hps.data.sampling_rate, audio)
+    print(f'./{output_dir}/output_{sid_src}-{sid_tgt}.wav Generated!')
+
+    '''
+    print("Original SID: %d" % sid_src.item())
+    ipd.display(ipd.Audio(y[0].cpu().numpy(), rate=hps.data.sampling_rate, normalize=False))
+    print("Converted SID: %d" % sid_tgt1.item())
+    ipd.display(ipd.Audio(audio1, rate=hps.data.sampling_rate, normalize=False))
+    print("Converted SID: %d" % sid_tgt2.item())
+    ipd.display(ipd.Audio(audio2, rate=hps.data.sampling_rate, normalize=False))
+    print("Converted SID: %d" % sid_tgt3.item())
+    ipd.display(ipd.Audio(audio3, rate=hps.data.sampling_rate, normalize=False))
+    '''
+
+
+
 hps = utils.get_hparams_from_file(path_to_config)
 
 if "use_mel_posterior_encoder" in hps.model.keys() and hps.model.use_mel_posterior_encoder == True:
@@ -127,3 +166,5 @@ _ = utils.load_checkpoint(path_to_model, net_g, None)
 
 
 vcss(input)
+
+

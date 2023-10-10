@@ -26,7 +26,8 @@ from models import (
     SynthesizerTrn,
     MultiPeriodDiscriminator,
     DurationDiscriminator,
-    AVAILABLE_FLOW_TYPES
+    AVAILABLE_FLOW_TYPES,
+    AVAILABLE_DURATION_DISCRIMINATOR_TYPES
 )
 from losses import (
     generator_loss,
@@ -101,8 +102,8 @@ def run(rank, n_gpus, hps):
     if "use_transformer_flows" in hps.model.keys() and hps.model.use_transformer_flows == True:
         use_transformer_flows = True
         transformer_flow_type = hps.model.transformer_flow_type
-        print(f"Using transformer flows {transformer_flow_type} for VITS2")
         assert transformer_flow_type in AVAILABLE_FLOW_TYPES, f"transformer_flow_type must be one of {AVAILABLE_FLOW_TYPES}"
+        print(f"Using transformer flows {transformer_flow_type} for VITS2")
     else:
         print("Using normal flows for VITS1")
         use_transformer_flows = False
@@ -127,8 +128,16 @@ def run(rank, n_gpus, hps):
         noise_scale_delta = 0.0
 
     if "use_duration_discriminator" in hps.model.keys() and hps.model.use_duration_discriminator == True:
-        print("Using duration discriminator for VITS2")
+        # print("Using duration discriminator for VITS2")
         use_duration_discriminator = True
+
+        #- for duration_discriminator2
+        # duration_discriminator_type = getattr(hps.model, "duration_discriminator_type", "dur_disc_1")
+        duration_discriminator_type = hps.model.duration_discriminator_type
+        assert duration_discriminator_type in AVAILABLE_DURATION_DISCRIMINATOR_TYPES.keys(), f"duration_discriminator_type must be one of {list(AVAILABLE_DURATION_DISCRIMINATOR_TYPES.keys())}"
+        print(f"Using duration_discriminator {duration_discriminator_type} for VITS2")
+        DurationDiscriminator = AVAILABLE_DURATION_DISCRIMINATOR_TYPES[duration_discriminator_type]
+
         net_dur_disc = DurationDiscriminator(
             hps.model.hidden_channels,
             hps.model.hidden_channels,
@@ -252,7 +261,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
                 mel = spec
             else:
                 mel = spec_to_mel_torch(
-                    spec,
+                    # spec,
+                    spec.float(), #- for 16bit stability
                     hps.data.filter_length,
                     hps.data.n_mel_channels,
                     hps.data.sampling_rate,
