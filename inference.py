@@ -28,6 +28,16 @@ from phonemizer.backend.espeak.wrapper import EspeakWrapper
 _ESPEAK_LIBRARY = 'C:\Program Files\eSpeak NG\libespeak-ng.dll'
 EspeakWrapper.set_library(_ESPEAK_LIBRARY)
 '''
+
+# - paths
+path_to_config = "put_your_config_path_here" # path to .json
+path_to_model = "put_your_model_path_here" # path to G_xxxx.pth
+
+
+#- text input
+input = "I try to get the waiter's attention by blinking in morse code"
+
+
 # check device
 if torch.cuda.is_available() is True:
     device = "cuda:0"
@@ -94,13 +104,6 @@ def vcms(inputstr, sid): # multi
     print(f'./{output_dir}/output_{sid}.wav Generated!')
 
 
-
-# - paths
-path_to_config = "put_your_config_path_here" # path to .json
-path_to_model = "put_your_model_path_here" # path to G_xxxx.pth
-
-
-
 hps = utils.get_hparams_from_file(path_to_config)
 
 if "use_mel_posterior_encoder" in hps.model.keys() and hps.model.use_mel_posterior_encoder == True:
@@ -116,15 +119,11 @@ net_g = SynthesizerTrn(
     len(symbols),
     posterior_channels,
     hps.train.segment_size // hps.data.hop_length,
-    # n_speakers=hps.data.n_speakers, #- for multi speaker
+    n_speakers=hps.data.n_speakers, #- >0 for multi speaker
     **hps.model).to(device)
 _ = net_g.eval()
 
 _ = utils.load_checkpoint(path_to_model, net_g, None)
 
-
-
-# - text input
-input = "I try to get the waiter's attention by blinking in morse code"
 
 vcss(input)

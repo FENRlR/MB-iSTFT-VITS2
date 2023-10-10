@@ -48,7 +48,7 @@ net_g = SynthesizerTrn(
     len(symbols),
     posterior_channels,
     hps.train.segment_size // hps.data.hop_length,
-    # n_speakers=hps.data.n_speakers, #- for multi speaker
+    n_speakers=hps.data.n_speakers,
     is_onnx=True, # !
     **hps.model)
 
