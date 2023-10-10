@@ -104,8 +104,8 @@ def run(rank, n_gpus, hps):
     if "use_transformer_flows" in hps.model.keys() and hps.model.use_transformer_flows == True:
         use_transformer_flows = True
         transformer_flow_type = hps.model.transformer_flow_type
-        assert transformer_flow_type in AVAILABLE_FLOW_TYPES, f"transformer_flow_type must be one of {AVAILABLE_FLOW_TYPES}"
         print(f"Using transformer flows {transformer_flow_type} for VITS2")
+        assert transformer_flow_type in AVAILABLE_FLOW_TYPES, f"transformer_flow_type must be one of {AVAILABLE_FLOW_TYPES}"
     else:
         print("Using normal flows for VITS1")
         use_transformer_flows = False
@@ -137,8 +137,8 @@ def run(rank, n_gpus, hps):
         #- for duration_discriminator2
         # duration_discriminator_type = getattr(hps.model, "duration_discriminator_type", "dur_disc_1")
         duration_discriminator_type = hps.model.duration_discriminator_type
-        assert duration_discriminator_type in AVAILABLE_DURATION_DISCRIMINATOR_TYPES.keys(), f"duration_discriminator_type must be one of {list(AVAILABLE_DURATION_DISCRIMINATOR_TYPES.keys())}"
         print(f"Using duration discriminator {duration_discriminator_type} for VITS2")
+        assert duration_discriminator_type in AVAILABLE_DURATION_DISCRIMINATOR_TYPES.keys(), f"duration_discriminator_type must be one of {list(AVAILABLE_DURATION_DISCRIMINATOR_TYPES.keys())}"
         DurationDiscriminator = AVAILABLE_DURATION_DISCRIMINATOR_TYPES[duration_discriminator_type]
 
         net_dur_disc = DurationDiscriminator(
@@ -395,10 +395,13 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
                 prev_g = os.path.join(hps.model_dir, "G_{}.pth".format(global_step - 3 * hps.train.eval_interval))
                 prev_d = os.path.join(hps.model_dir, "D_{}.pth".format(global_step - 3 * hps.train.eval_interval))
+                prev_dur = os.path.join(hps.model_dir, "DUR_{}.pth".format(global_step - 3 * hps.train.eval_interval))
                 if os.path.exists(prev_g):
                     os.remove(prev_g)
                 if os.path.exists(prev_d):
                     os.remove(prev_d)
+                if os.path.exists(prev_dur):
+                    os.remove(prev_dur)
 
         global_step += 1
 
