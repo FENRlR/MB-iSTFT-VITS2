@@ -390,16 +390,16 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
                                           os.path.join(hps.model_dir, "DUR_{}.pth".format(global_step)))
 
                 prev_g = os.path.join(hps.model_dir, "G_{}.pth".format(global_step - 3 * hps.train.eval_interval))
-                prev_d = os.path.join(hps.model_dir, "D_{}.pth".format(global_step - 3 * hps.train.eval_interval))
-                prev_dur = os.path.join(hps.model_dir, "DUR_{}.pth".format(global_step - 3 * hps.train.eval_interval))
                 if os.path.exists(prev_g):
                     os.remove(prev_g)
-                if os.path.exists(prev_d):
-                    os.remove(prev_d)
-                if os.path.exists(prev_dur):
-                    os.remove(prev_dur)
+                    prev_d = os.path.join(hps.model_dir, "D_{}.pth".format(global_step - 3 * hps.train.eval_interval))
+                    if os.path.exists(prev_d):
+                        os.remove(prev_d)
+                        prev_dur = os.path.join(hps.model_dir, "DUR_{}.pth".format(global_step - 3 * hps.train.eval_interval))
+                        if os.path.exists(prev_dur):
+                            os.remove(prev_dur)
 
-        global_step += 1
+    global_step += 1
 
     if rank == 0:
         logger.info('====> Epoch: {}'.format(epoch))
