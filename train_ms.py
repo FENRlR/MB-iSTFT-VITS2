@@ -420,7 +420,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
                         if os.path.exists(prev_dur):
                             os.remove(prev_dur)
 
-    global_step += 1
+        global_step += 1
 
     if rank == 0:
         logger.info('====> Epoch: {}'.format(epoch))
