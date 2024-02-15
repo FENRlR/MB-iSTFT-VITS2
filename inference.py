@@ -44,6 +44,27 @@ if torch.cuda.is_available() is True:
 else:
     device = "cpu"
 
+hps = utils.get_hparams_from_file(path_to_config)
+
+if "use_mel_posterior_encoder" in hps.model.keys() and hps.model.use_mel_posterior_encoder == True:
+    print("Using mel posterior encoder for VITS2")
+    posterior_channels = 80  # vits2
+    hps.data.use_mel_posterior_encoder = True
+else:
+    print("Using lin posterior encoder for VITS1")
+    posterior_channels = hps.data.filter_length // 2 + 1
+    hps.data.use_mel_posterior_encoder = False
+
+net_g = SynthesizerTrn(
+    len(symbols),
+    posterior_channels,
+    hps.train.segment_size // hps.data.hop_length,
+    n_speakers=hps.data.n_speakers, #- >0 for multi speaker
+    **hps.model).to(device)
+_ = net_g.eval()
+
+_ = utils.load_checkpoint(path_to_model, net_g, None)
+
 
 def get_text(text, hps):
     text_norm = text_to_sequence(text, hps.data.text_cleaners)
@@ -70,14 +91,18 @@ def langdetector(text):  # from PolyLangVITS
         return text
 
 
+speed = 1
+sid = 0
+output_dir = 'output'
+os.makedirs(output_dir, exist_ok=True)
+speakers = [name for sid, name in enumerate(hps.speakers) if name != "None"]
+
+
 def vcss(inputstr): # single
     fltstr = re.sub(r"[\[\]\(\)\{\}]", "", inputstr)
     #fltstr = langdetector(fltstr) #- optional for cjke/cjks type cleaners
     stn_tst = get_text(fltstr, hps)
 
-    speed = 1
-    output_dir = 'output'
-    sid = 0
     with torch.no_grad():
         x_tst = stn_tst.to(device).unsqueeze(0)
         x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).to(device)
@@ -92,16 +117,14 @@ def vcms(inputstr, sid): # multi
     #fltstr = langdetector(fltstr) #- optional for cjke/cjks type cleaners
     stn_tst = get_text(fltstr, hps)
 
-    speed = 1
-    output_dir = 'output'
-    with torch.no_grad():
-        x_tst = stn_tst.to(device).unsqueeze(0)
-        x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).to(device)
-        sid = torch.LongTensor([sid]).to(device)
-        audio = net_g.infer(x_tst, x_tst_lengths, sid=sid, noise_scale=.667, noise_scale_w=0.8, length_scale=1 / speed)[0][
-            0, 0].data.cpu().float().numpy()
-    write(f'./{output_dir}/output_{sid}.wav', hps.data.sampling_rate, audio)
-    print(f'./{output_dir}/output_{sid}.wav Generated!')
+    for idx, speaker in enumerate(speakers):
+        sid = torch.LongTensor([idx]).to(device)
+        with torch.no_grad():
+            x_tst = stn_tst.to(device).unsqueeze(0)
+            x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).to(device)
+            audio = net_g.infer(x_tst, x_tst_lengths, sid=sid, noise_scale=.667, noise_scale_w=0.8, length_scale=1 / speed)[0][0,0].data.cpu().float().numpy()
+        write(f'{output_dir}/{speaker}.wav', hps.data.sampling_rate, audio)
+        print(f'{output_dir}/{speaker}.wav Generated!')
 
 
 def ex_voice_conversion(sid_tgt): # dummy - TODO : further work
@@ -140,30 +163,6 @@ def ex_voice_conversion(sid_tgt): # dummy - TODO : further work
     print("Converted SID: %d" % sid_tgt3.item())
     ipd.display(ipd.Audio(audio3, rate=hps.data.sampling_rate, normalize=False))
     '''
-
-
-
-hps = utils.get_hparams_from_file(path_to_config)
-
-if "use_mel_posterior_encoder" in hps.model.keys() and hps.model.use_mel_posterior_encoder == True:
-    print("Using mel posterior encoder for VITS2")
-    posterior_channels = 80  # vits2
-    hps.data.use_mel_posterior_encoder = True
-else:
-    print("Using lin posterior encoder for VITS1")
-    posterior_channels = hps.data.filter_length // 2 + 1
-    hps.data.use_mel_posterior_encoder = False
-
-net_g = SynthesizerTrn(
-    len(symbols),
-    posterior_channels,
-    hps.train.segment_size // hps.data.hop_length,
-    n_speakers=hps.data.n_speakers, #- >0 for multi speaker
-    **hps.model).to(device)
-_ = net_g.eval()
-
-_ = utils.load_checkpoint(path_to_model, net_g, None)
-
 
 vcss(input)
 
