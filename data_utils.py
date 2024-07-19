@@ -412,7 +412,7 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
           rem = num_samples_bucket - len_bucket
           ids_bucket = ids_bucket + ids_bucket * (rem // len_bucket) + ids_bucket[:(rem % len_bucket)]
           '''
-          if len_bucket > 0: #- fix for  https://github.com/FENRlR/MB-iSTFT-VITS2/issues/9
+          if len_bucket > 0: #- fix for  https://github.com/FENRlR/MB-iSTFT-VITS2/issues/8
               rem = num_samples_bucket - len_bucket
               ids_bucket = ids_bucket + ids_bucket * (rem // len_bucket) + ids_bucket[:(rem % len_bucket)]
           '''
