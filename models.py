@@ -7,7 +7,8 @@ from torch.nn import functional as F
 import commons
 import modules
 import attentions
-import monotonic_align
+#import monotonic_align
+import S_monotonic_align as sma
 
 from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
@@ -1409,7 +1410,11 @@ class SynthesizerTrn(nn.Module):
                 neg_cent = neg_cent + epsilon
 
             attn_mask = torch.unsqueeze(x_mask, 2) * torch.unsqueeze(y_mask, -1)
-            attn = monotonic_align.maximum_path(neg_cent, attn_mask.squeeze(1)).unsqueeze(1).detach()
+
+            #- ! MAS replacement
+            # attn = monotonic_align.maximum_path(neg_cent, attn_mask.squeeze(1)).unsqueeze(1).detach()
+            attn = sma.maximum_path1(neg_cent, attn_mask.squeeze(1)).unsqueeze(1).detach()
+
 
         w = attn.sum(2)
         if self.use_sdp:
