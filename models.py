@@ -7,8 +7,11 @@ from torch.nn import functional as F
 import commons
 import modules
 import attentions
-#import monotonic_align
+
+# -! triton
+import monotonic_align
 import S_monotonic_align as sma
+import S_monotonic_align_Triton as smat
 
 from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
@@ -1257,8 +1260,8 @@ class MultiPeriodDiscriminator(torch.nn.Module):
 
 class SynthesizerTrn(nn.Module):
     """
-  Synthesizer for Training
-  """
+    Synthesizer for Training
+    """
 
     def __init__(self,
                  n_vocab,
@@ -1384,6 +1387,9 @@ class SynthesizerTrn(nn.Module):
         if n_speakers > 1:
             self.emb_g = nn.Embedding(n_speakers, gin_channels)
 
+        #- options for MAS : "sma_v1", "sma_v2", "sma_triton", "ma"
+        self.monotonic_align = kwargs.get("monotonic_align", "ma")
+
     def forward(self, x, x_lengths, y, y_lengths, sid=None):
         # x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
         if self.n_speakers > 0:
@@ -1411,10 +1417,19 @@ class SynthesizerTrn(nn.Module):
 
             attn_mask = torch.unsqueeze(x_mask, 2) * torch.unsqueeze(y_mask, -1)
 
-            #- ! MAS replacement
-            # attn = monotonic_align.maximum_path(neg_cent, attn_mask.squeeze(1)).unsqueeze(1).detach()
-            attn = sma.maximum_path1(neg_cent, attn_mask.squeeze(1)).unsqueeze(1).detach()
+            #-! MAS replacement
+            # options for MAS : "sma_v1", "sma_v2", "sma_triton", "ma"
+            if self.monotonic_align == "sma_triton":
+                attn = smat.maximum_path(neg_cent.transpose(-1, -2), attn_mask.squeeze(1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(1).detach()
+            elif self.monotonic_align == "sma_v1":
+                attn = sma.maximum_path1(neg_cent.transpose(-1, -2), attn_mask.squeeze(1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(1).detach()
+            elif self.monotonic_align == "sma_v2":
+                attn = sma.maximum_path2(neg_cent.transpose(-1, -2), attn_mask.squeeze(1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(1).detach()
+            else: # "ma" but anyway
+                attn = monotonic_align.maximum_path(neg_cent, attn_mask.squeeze(1)).unsqueeze(1).detach()
 
+            #- prev
+            #attn = monotonic_align.maximum_path(neg_cent, attn_mask.squeeze(1)).unsqueeze(1).detach()
 
         w = attn.sum(2)
         if self.use_sdp:
@@ -1453,8 +1468,7 @@ class SynthesizerTrn(nn.Module):
         attn = commons.generate_path(w_ceil, attn_mask)
 
         m_p = torch.matmul(attn.squeeze(1), m_p.transpose(1, 2)).transpose(1, 2)  # [b, t', t], [b, t, d] -> [b, d, t']
-        logs_p = torch.matmul(attn.squeeze(1), logs_p.transpose(1, 2)).transpose(1,
-                                                                                 2)  # [b, t', t], [b, t, d] -> [b, d, t']
+        logs_p = torch.matmul(attn.squeeze(1), logs_p.transpose(1, 2)).transpose(1, 2)  # [b, t', t], [b, t, d] -> [b, d, t']
 
         z_p = m_p + torch.randn_like(m_p) * torch.exp(logs_p) * noise_scale
         z = self.flow(z_p, y_mask, g=g, reverse=True)

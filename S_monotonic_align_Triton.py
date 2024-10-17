@@ -1,6 +1,5 @@
 #- From https://github.com/supertone-inc/super-monotonic-align
 import torch
-
 import triton
 import triton.language as tl
 
@@ -55,7 +54,7 @@ def maximum_path_triton(path, value, t_x, t_y, max_neg_val=-1e32):
 
 
 @torch.no_grad()
-def maximum_path(value, mask, dtype=torch.float32):
+def maximum_path(value, mask, dtype=torch.float32): # callable
     """ Triton optimized version.
     value: [b, t_x, t_y]
     mask: [b, t_x, t_y]
