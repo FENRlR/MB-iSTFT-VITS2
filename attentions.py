@@ -287,7 +287,7 @@ class MultiHeadDiffAttention(nn.Module): #-! where depth is layer index or lambd
 
     self.channels = channels
     self.out_channels = out_channels
-    self.n_heads = n_heads // 2 #-!
+    self.n_heads = n_heads #-!
 
     self.p_dropout = p_dropout
     self.window_size = window_size
@@ -297,7 +297,7 @@ class MultiHeadDiffAttention(nn.Module): #-! where depth is layer index or lambd
     self.proximal_init = proximal_init
     self.attn = None
 
-    self.k_channels = channels // n_heads
+    self.k_channels = channels // n_heads // 2 #-!
     self.conv_q = nn.Conv1d(channels, channels, 1)
     self.conv_k = nn.Conv1d(channels, channels, 1)
     self.conv_v = nn.Conv1d(channels, channels, 1)
@@ -319,10 +319,10 @@ class MultiHeadDiffAttention(nn.Module): #-! where depth is layer index or lambd
         self.conv_k.bias.copy_(self.conv_q.bias)
 
     self.lambda_init = self.lambda_init_fn(depth)
-    self.lambda_q1 = nn.Parameter(torch.zeros(self.head_dim, dtype=torch.float32).normal_(mean=0, std=0.1))
-    self.lambda_k1 = nn.Parameter(torch.zeros(self.head_dim, dtype=torch.float32).normal_(mean=0, std=0.1))
-    self.lambda_q2 = nn.Parameter(torch.zeros(self.head_dim, dtype=torch.float32).normal_(mean=0, std=0.1))
-    self.lambda_k2 = nn.Parameter(torch.zeros(self.head_dim, dtype=torch.float32).normal_(mean=0, std=0.1))
+    self.lambda_q1 = nn.Parameter(torch.zeros(self.k_channels, dtype=torch.float32).normal_(mean=0, std=0.1))
+    self.lambda_k1 = nn.Parameter(torch.zeros(self.k_channels, dtype=torch.float32).normal_(mean=0, std=0.1))
+    self.lambda_q2 = nn.Parameter(torch.zeros(self.k_channels, dtype=torch.float32).normal_(mean=0, std=0.1))
+    self.lambda_k2 = nn.Parameter(torch.zeros(self.k_channels, dtype=torch.float32).normal_(mean=0, std=0.1))
 
     self.groupnorm = RMSNorm(2 * self.n_heads, eps=1e-5, elementwise_affine=False)
 
