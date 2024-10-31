@@ -287,7 +287,7 @@ class MultiHeadDiffAttention(nn.Module): #-! where depth is layer index or lambd
 
     self.channels = channels
     self.out_channels = out_channels
-    self.n_heads = n_heads #-!
+    self.n_heads = n_heads // 2 #-!
 
     self.p_dropout = p_dropout
     self.window_size = window_size
@@ -297,7 +297,7 @@ class MultiHeadDiffAttention(nn.Module): #-! where depth is layer index or lambd
     self.proximal_init = proximal_init
     self.attn = None
 
-    self.k_channels = channels // n_heads // 2 #-!
+    self.k_channels = channels // self.n_heads // 2 #-!
     self.conv_q = nn.Conv1d(channels, channels, 1)
     self.conv_k = nn.Conv1d(channels, channels, 1)
     self.conv_v = nn.Conv1d(channels, channels, 1)
