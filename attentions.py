@@ -308,7 +308,7 @@ class MultiHeadDiffAttention(nn.Module): #-! where depth is layer index or lambd
       n_heads_rel = 1 if heads_share else self.n_heads
       rel_stddev = self.k_channels ** -0.5
       self.emb_rel_k = nn.Parameter(torch.randn(n_heads_rel, window_size * 2 + 1, self.k_channels) * rel_stddev)
-      self.emb_rel_v = nn.Parameter(torch.randn(n_heads_rel, window_size * 2 + 1, self.k_channels) * rel_stddev)
+      self.emb_rel_v = nn.Parameter(torch.randn(n_heads_rel, window_size * 2 + 1, 2 * self.k_channels) * rel_stddev)
 
     nn.init.xavier_uniform_(self.conv_q.weight)
     nn.init.xavier_uniform_(self.conv_k.weight)
