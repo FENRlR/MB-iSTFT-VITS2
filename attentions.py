@@ -382,7 +382,7 @@ class MultiHeadDiffAttention(nn.Module): #-! where depth is layer index or lambd
 
     return output, p_attn
 
-  def lambda_init_fn(depth):
+  def lambda_init_fn(self, depth):
     return 0.8 - 0.6 * math.exp(-0.3 * depth)
 
   def _matmul_with_relative_values(self, x, y):
