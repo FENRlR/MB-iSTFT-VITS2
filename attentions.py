@@ -12,7 +12,7 @@ from modules import LayerNorm
 
 class Encoder(nn.Module): #backward compatible vits2 encoder
   def __init__( # n_heads = 2 in all occurrences
-      self, hidden_channels, filter_channels, n_heads, n_layers, kernel_size=1, p_dropout=0., window_size=4, **kwargs
+      self, hidden_channels, filter_channels, n_heads, n_layers, kernel_size=1, p_dropout=0., window_size=4, dtf="normal", **kwargs
       ):
     super().__init__()
     self.hidden_channels = hidden_channels
@@ -39,6 +39,24 @@ class Encoder(nn.Module): #backward compatible vits2 encoder
         print(self.gin_channels, self.cond_layer_idx)
         assert self.cond_layer_idx < self.n_layers, 'cond_layer_idx should be less than n_layers'
     # TODO : !
+    self.dtf = dtf
+    if self.dtf == "dtf_v1" or self.dtf == "dtf_v2":
+      if self.dtf == "dtf_v1":
+        self.n_heads = n_heads // 2
+      for i in range(self.n_layers):
+        self.attn_layers.append(
+          MultiHeadDiffAttention(hidden_channels, hidden_channels, self.n_heads, i + 1, p_dropout=p_dropout,
+                                 window_size=window_size))
+        self.norm_layers_1.append(LayerNorm(hidden_channels))
+        self.ffn_layers.append(FFN(hidden_channels, hidden_channels, filter_channels, kernel_size, p_dropout=p_dropout))
+        self.norm_layers_2.append(LayerNorm(hidden_channels))
+    else:
+      for i in range(self.n_layers):
+        self.attn_layers.append(
+          MultiHeadAttention(hidden_channels, hidden_channels, self.n_heads, p_dropout=p_dropout, window_size=window_size))
+        self.norm_layers_1.append(LayerNorm(hidden_channels))
+        self.ffn_layers.append(FFN(hidden_channels, hidden_channels, filter_channels, kernel_size, p_dropout=p_dropout))
+        self.norm_layers_2.append(LayerNorm(hidden_channels))
     #- prev
     """
     for i in range(self.n_layers):
@@ -49,11 +67,13 @@ class Encoder(nn.Module): #backward compatible vits2 encoder
     
     """
     #- new
+    """
     for i in range(self.n_layers):
       self.attn_layers.append(MultiHeadDiffAttention(hidden_channels, hidden_channels, n_heads, i+1, p_dropout=p_dropout, window_size=window_size))
       self.norm_layers_1.append(LayerNorm(hidden_channels))
       self.ffn_layers.append(FFN(hidden_channels, hidden_channels, filter_channels, kernel_size, p_dropout=p_dropout))
       self.norm_layers_2.append(LayerNorm(hidden_channels))
+    """
 
   def forward(self, x, x_mask, g=None):
     attn_mask = x_mask.unsqueeze(2) * x_mask.unsqueeze(-1)
@@ -287,7 +307,7 @@ class MultiHeadDiffAttention(nn.Module): #-! where depth is layer index or lambd
 
     self.channels = channels
     self.out_channels = out_channels
-    self.n_heads = n_heads // 2 #-!
+    self.n_heads = n_heads #// 2 #-!
 
     self.p_dropout = p_dropout
     self.window_size = window_size
@@ -607,7 +627,7 @@ def remove_weight_norm_modules(module, name = 'weight'):
     
 class FFT(nn.Module):
   def __init__(self, hidden_channels, filter_channels, n_heads, n_layers=1, kernel_size=1, p_dropout=0.,
-               proximal_bias=False, proximal_init=True, isflow = False, **kwargs):
+               proximal_bias=False, proximal_init=True, isflow = False, dtf="normal", **kwargs):
     super().__init__()
     self.hidden_channels = hidden_channels
     self.filter_channels = filter_channels
@@ -627,7 +647,31 @@ class FFT(nn.Module):
     self.norm_layers_0 = nn.ModuleList()
     self.ffn_layers = nn.ModuleList()
     self.norm_layers_1 = nn.ModuleList()
+
     # TODO : !
+    self.dtf = dtf
+    if self.dtf == "dtf_v1" or self.dtf == "dtf_v2":
+      if self.dtf == "dtf_v1":
+        self.n_heads = n_heads // 2
+      for i in range(self.n_layers):
+        self.self_attn_layers.append(
+          MultiHeadDiffAttention(hidden_channels, hidden_channels, n_heads, i + 1, p_dropout=p_dropout,
+                                 proximal_bias=proximal_bias,
+                                 proximal_init=proximal_init))
+        self.norm_layers_0.append(LayerNorm(hidden_channels))
+        self.ffn_layers.append(
+          FFN(hidden_channels, hidden_channels, filter_channels, kernel_size, p_dropout=p_dropout, causal=True))
+        self.norm_layers_1.append(LayerNorm(hidden_channels))
+    else:
+      for i in range(self.n_layers):
+        self.self_attn_layers.append(
+          MultiHeadAttention(hidden_channels, hidden_channels, n_heads, p_dropout=p_dropout,
+                             proximal_bias=proximal_bias,
+                             proximal_init=proximal_init))
+        self.norm_layers_0.append(LayerNorm(hidden_channels))
+        self.ffn_layers.append(
+          FFN(hidden_channels, hidden_channels, filter_channels, kernel_size, p_dropout=p_dropout, causal=True))
+        self.norm_layers_1.append(LayerNorm(hidden_channels))
     #- prev
     """
     for i in range(self.n_layers):
@@ -639,6 +683,7 @@ class FFT(nn.Module):
         FFN(hidden_channels, hidden_channels, filter_channels, kernel_size, p_dropout=p_dropout, causal=True))
       self.norm_layers_1.append(LayerNorm(hidden_channels))
     """
+    """
     #- new
     for i in range(self.n_layers):
       self.self_attn_layers.append(
@@ -648,6 +693,7 @@ class FFT(nn.Module):
       self.ffn_layers.append(
         FFN(hidden_channels, hidden_channels, filter_channels, kernel_size, p_dropout=p_dropout, causal=True))
       self.norm_layers_1.append(LayerNorm(hidden_channels))
+    """
 
   def forward(self, x, x_mask, g = None):
     """
